@@ -59,15 +59,16 @@ namespace Platform
             //});
 
 
-            //Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
-            //{
-            //    if (context.Request.Path == "/str")
-            //    {
-            //        await context.Response.WriteAsync($"works closure");
-            //    }
-            //    else { await task(); }                       
-            //};
+            Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
+            {
+                if (context.Request.Method == HttpMethods.Get && context.Request.Query["myRequest"] == "true" )
+                {
+                    await context.Response.WriteAsync("myRequest\n");
+                }
+                await task(); 
+            };
 
+            app.Use(func);
 
             //Новое промежуточное ПО немедленно вызывает следующий метод для передачи запроса по конвейеру,
             //а затем использует метод WriteAsync. метод для добавления строки в тело ответа.
@@ -101,15 +102,15 @@ namespace Platform
 
             //метод Use регистрирует компонент промежуточного слоя(ПО) в методе Configure
             //для обработки его(компонента) через конвеер запросов
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Method == HttpMethods.Get
-                && context.Request.Query["custom"] == "true")
-                {
-                    await context.Response.WriteAsync("Custom Middleware \n");
-                }
-                await next();
-            });
+            //app.Use(async (context, next) =>
+            //{
+            //    if (context.Request.Method == HttpMethods.Get
+            //    && context.Request.Query["custom"] == "true")
+            //    {
+            //        await context.Response.WriteAsync("Custom Middleware \n");
+            //    }
+            //    await next();
+            //});
 
             //метод UseMiddleware регистрирует класс где находится  компонент ПО промежуточного слоя
             //app.UseMiddleware<QueryStringMiddleWare>();
