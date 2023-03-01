@@ -33,30 +33,36 @@ namespace Platform
                 app.UseDeveloperExceptionPage();
             }
 
+            app.Use(async (cont, next) =>
+            {
+                await next.Invoke();
+                await cont.Response.WriteAsync($"\n status code: {cont.Response.StatusCode}");
+            });
 
 
+            app.Map("/branch", branch =>
+            {
 
-            //app.Map("/branch",branch => {
+                branch.UseMiddleware<QueryStringMiddleWare>();
+                //branch.Use(async (cont, next) =>
+                //{
 
-            //    //branch.UseMiddleware<QueryStringMiddleWare>();
-            //    app.Use(async (cont, next) =>
-            //    {
+                //    if (cont.Request.Method == HttpMethods.Get && cont.Request.Query["my"] == "true")
+                //    {
+                //        await cont.Response.WriteAsync("Dron\n");
+                //    }
 
-            //        if (cont.Request.Method == HttpMethods.Get && cont.Request.Query["my"] == "true")
-            //        {
-            //            await cont.Response.WriteAsync("Dron\n");
-            //        }
+                //    //await cont.Response.WriteAsync("Dron\t");
+                //    await next();
+                //});
 
-            //        //await cont.Response.WriteAsync("Dron\t");
-            //        await next();
-            //    });
+                branch.Use(async (cont, next) =>
+                {
+                    await cont.Response.WriteAsync($"Branch Middleware");
+                    //await next();
+                });
 
-            //    branch.Use(async(cont,next) => {
-            //        await cont.Response.WriteAsync("this Branch Middleware ");
-            //        await next();   
-            //    });
-
-            //});
+            });
 
 
             //Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
@@ -72,35 +78,36 @@ namespace Platform
 
             //Новое промежуточное ПО немедленно вызывает следующий метод для передачи запроса по конвейеру,
             //а затем использует метод WriteAsync. метод для добавления строки в тело ответа.
-            app.Use(async (cont, next) =>
-            {
-                await next();
-                await cont.Response.WriteAsync($"\n Status code: {cont.Response.StatusCode}"); // метод WriteAsync - для добавления строки в тело ответа
-                //await next();
-            });
+            //app.Use(async (cont, next) =>
+            //{
+            //    await next();
+            //    await cont.Response.WriteAsync($"\n Status code: {cont.Response.StatusCode}"); // метод WriteAsync - для добавления строки в тело ответа
+            //    //await next();
+            //});
 
 
-            app.Use(async (cont, next) =>
-            {
-                await next.Invoke();
-                await cont.Response.WriteAsync($"\n status code: {cont.Response.StatusCode}");
-            });
+            //app.Use(async (cont, next) =>
+            //{
+            //    await next.Invoke();
+            //    await cont.Response.WriteAsync($"\n status code: {cont.Response.StatusCode}");
+            //});
 
-            app.Use(async(cont,next) => {
+            ////короткое замыкание
+            //app.Use(async(cont,next) => {
 
-                if (cont.Request.Path == "/short")
-                {
-                   await cont.Response.WriteAsync("\n short");
-                }
-                else
-                {
-                    await next.Invoke();    
-                }
-            
-            });
+            //    if (cont.Request.Path == "/short")
+            //    {
+            //       await cont.Response.WriteAsync("\n short");
+            //    }
+            //    else
+            //    {
+            //        await next.Invoke();    
+            //    }
+
+            //});
 
 
-            //app.Use(func);
+
 
 
             //app.Use(async(cont,next) => {
@@ -123,20 +130,20 @@ namespace Platform
 
             //метод Use регистрирует компонент промежуточного слоя(ПО) в методе Configure
             //для обработки его(компонента) через конвеер запросов
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Method == HttpMethods.Get
-                && context.Request.Query["custom"] == "true")
-                {
-                    await context.Response.WriteAsync("Custom Middleware \n");
+            //app.Use(async (context, next) =>
+            //{
+            //    if (context.Request.Method == HttpMethods.Get
+            //    && context.Request.Query["custom"] == "true")
+            //    {
+            //        await context.Response.WriteAsync("Custom Middleware \n");
 
-                }
+            //    }
 
-                await next();
-                
-            });
+            //    await next();
 
-            //метод UseMiddleware регистрирует класс где находится  компонент ПО промежуточного слоя
+            //});
+
+            //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
             app.UseMiddleware<QueryStringMiddleWare>();
 
             app.UseRouting();
