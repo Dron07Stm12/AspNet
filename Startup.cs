@@ -80,9 +80,23 @@ namespace Platform
             });
 
 
-            app.Use(async(cont,next) => {
-               await next.Invoke();
+            app.Use(async (cont, next) =>
+            {
+                await next.Invoke();
                 await cont.Response.WriteAsync($"\n status code: {cont.Response.StatusCode}");
+            });
+
+            app.Use(async(cont,next) => {
+
+                if (cont.Request.Path == "/short")
+                {
+                   await cont.Response.WriteAsync("\n short");
+                }
+                else
+                {
+                    await next.Invoke();    
+                }
+            
             });
 
 
@@ -112,7 +126,7 @@ namespace Platform
             app.Use(async (context, next) =>
             {
                 if (context.Request.Method == HttpMethods.Get
-               /* && context.Request.Query["custom"] == "true"*/)
+                && context.Request.Query["custom"] == "true")
                 {
                     await context.Response.WriteAsync("Custom Middleware \n");
 
