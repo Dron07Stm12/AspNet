@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -40,29 +41,40 @@ namespace Platform
             });
 
 
-            app.Map("/branch", branch =>
-            {
+            //app.MapWhen(cont => cont.Request.Query.Keys.Contains("id"),
+            //           branch => branch.Use(async (cont, next) => { await cont.Response.WriteAsync("Lero"); }));
 
-                branch.UseMiddleware<QueryStringMiddleWare>();
-                //branch.Use(async (cont, next) =>
-                //{
+            app.MapWhen(context => {
 
-                //    if (cont.Request.Method == HttpMethods.Get && cont.Request.Query["my"] == "true")
-                //    {
-                //        await cont.Response.WriteAsync("Dron\n");
-                //    }
+                return context.Request.Query.ContainsKey("id") &&
+                        context.Request.Query["id"] == "5";
+            },  branch => branch.Use(async (cont, next) => { await cont.Response.WriteAsync("Lero"); }));
 
-                //    //await cont.Response.WriteAsync("Dron\t");
-                //    await next();
-                //});
+            //app.Map("/branch", branch =>
+            //{
 
-                branch.Use(async (cont, next) =>
-                {
-                    await cont.Response.WriteAsync($"Branch Middleware");
-                    //await next();
-                });
+            //    branch.UseMiddleware<QueryStringMiddleWare>();
+            //    //branch.Use(async (cont, next) =>
+            //    //{
 
-            });
+            //    //    if (cont.Request.Method == HttpMethods.Get && cont.Request.Query["my"] == "true")
+            //    //    {
+            //    //        await cont.Response.WriteAsync("Dron\n");
+            //    //    }
+
+            //    //    //await cont.Response.WriteAsync("Dron\t");
+            //    //    await next();
+            //    //});
+
+            //    branch.Use(async (cont, next) =>
+            //    {
+            //        await cont.Response.WriteAsync($"Branch Middleware");
+            //        //await next();
+            //    });
+
+            //});
+
+
 
 
             //Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
@@ -144,7 +156,7 @@ namespace Platform
             //});
 
             //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
-            app.UseMiddleware<QueryStringMiddleWare>();
+            //app.UseMiddleware<QueryStringMiddleWare>();
 
             app.UseRouting();
 
