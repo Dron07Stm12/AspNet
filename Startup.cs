@@ -72,11 +72,18 @@ namespace Platform
 
             //Ќовое промежуточное ѕќ немедленно вызывает следующий метод дл€ передачи запроса по конвейеру,
             //а затем использует метод WriteAsync. метод дл€ добавлени€ строки в тело ответа.
-            //app.Use(async(cont, next) => {
-            //    await next();   
-            //    await cont.Response.WriteAsync($"\n Status code: {cont.Response.StatusCode}"); // метод WriteAsync - дл€ добавлени€ строки в тело ответа
-            //    //await next();   
-            //});
+            app.Use(async (cont, next) =>
+            {
+                await next();
+                await cont.Response.WriteAsync($"\n Status code: {cont.Response.StatusCode}"); // метод WriteAsync - дл€ добавлени€ строки в тело ответа
+                //await next();
+            });
+
+
+            app.Use(async(cont,next) => {
+               await next.Invoke();
+                await cont.Response.WriteAsync($"\n status code: {cont.Response.StatusCode}");
+            });
 
 
             //app.Use(func);
@@ -105,11 +112,14 @@ namespace Platform
             app.Use(async (context, next) =>
             {
                 if (context.Request.Method == HttpMethods.Get
-                && context.Request.Query["custom"] == "true")
+               /* && context.Request.Query["custom"] == "true"*/)
                 {
                     await context.Response.WriteAsync("Custom Middleware \n");
+
                 }
+
                 await next();
+                
             });
 
             //метод UseMiddleware регистрирует класс где находитс€  компонент ѕќ промежуточного сло€
