@@ -70,11 +70,15 @@ namespace Platform
                 //или регистрируем ПО(мiddleware) через класс
                 //branch.UseMiddleware<QueryStringMiddleWare>();
 
-                branch.Use(async (cont, next) =>
-                {
-                    await cont.Response.WriteAsync($"Branch Middleware");
-                    //await next();
-                });
+                //branch.Use(async (cont, next) =>
+                //{
+                //    await cont.Response.WriteAsync($"Branch Middleware");
+                //    //await next();
+                //});
+                RequestDelegate handler = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate in methods Run"); };
+                branch.Run(handler);
+                //branch.Run(async(context) => { await context.Response.WriteAsync("methods Run"); });
+
 
             });
 
