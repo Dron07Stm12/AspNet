@@ -34,45 +34,49 @@ namespace Platform
                 app.UseDeveloperExceptionPage();
             }
 
-            app.Use(async (cont, next) =>
-            {
-                await next.Invoke();
-                await cont.Response.WriteAsync($"\n status code: {cont.Response.StatusCode}");
-            });
+            //app.Use(async (cont, next) =>
+            //{
+            //    await next.Invoke();
+            //    await cont.Response.WriteAsync($"\n status code: {cont.Response.StatusCode}");
+            //});
 
 
             //app.MapWhen(cont => cont.Request.Query.Keys.Contains("id"),
             //           branch => branch.Use(async (cont, next) => { await cont.Response.WriteAsync("Lero"); }));
 
-            app.MapWhen(context => {
+            //app.MapWhen(context => {
 
-                return context.Request.Query.ContainsKey("id") &&
-                        context.Request.Query["id"] == "5";
-            },  branch => branch.Use(async (cont, next) => { await cont.Response.WriteAsync("Lero"); }));
+            //    return context.Request.Query.ContainsKey("id") &&
+            //            context.Request.Query["id"] == "5";
+            //},  branch => branch.Use(async (cont, next) => { await cont.Response.WriteAsync("Lero"); }));
 
-            //app.Map("/branch", branch =>
-            //{
+            //ветвь
+            app.Map("/branch", branch =>
+            {
 
-            //    branch.UseMiddleware<QueryStringMiddleWare>();
-            //    //branch.Use(async (cont, next) =>
-            //    //{
+               
+               
+                branch.Use(async (cont, next) =>
+                {
 
-            //    //    if (cont.Request.Method == HttpMethods.Get && cont.Request.Query["my"] == "true")
-            //    //    {
-            //    //        await cont.Response.WriteAsync("Dron\n");
-            //    //    }
+                    if (cont.Request.Method == HttpMethods.Get && cont.Request.Query["my"] == "true")
+                    {
+                        await cont.Response.WriteAsync("Dron\n");
+                    }
 
-            //    //    //await cont.Response.WriteAsync("Dron\t");
-            //    //    await next();
-            //    //});
+                    //await cont.Response.WriteAsync("Dron\t");
+                    await next();
+                });
+                //или регистрируем ПО(мiddleware) через класс
+                //branch.UseMiddleware<QueryStringMiddleWare>();
 
-            //    branch.Use(async (cont, next) =>
-            //    {
-            //        await cont.Response.WriteAsync($"Branch Middleware");
-            //        //await next();
-            //    });
+                branch.Use(async (cont, next) =>
+                {
+                    await cont.Response.WriteAsync($"Branch Middleware");
+                    //await next();
+                });
 
-            //});
+            });
 
 
 
@@ -155,8 +159,15 @@ namespace Platform
 
             //});
 
+
+            //app.Map("branch", branch => {
+            //    branch.UseMiddleware<QueryStringMiddleWare>();
+            //    branch.Use(async(context,next) => {await context.Response.WriteAsync("Nata"); });
+            //});
+
+
             //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
-            //app.UseMiddleware<QueryStringMiddleWare>();
+            app.UseMiddleware<QueryStringMiddleWare>();
 
             app.UseRouting();
 
