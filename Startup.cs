@@ -229,43 +229,47 @@ namespace Platform
 
 
 
-
-            app.Map("/branch", branch =>
-            {
-                branch.UseMiddleware<QueryStringMiddleWare>();
-
-                branch.Use(async (cont, next) =>
-                {
-                   
-                    await cont.Response.WriteAsync("dron\n");
-                    await next();
-
-                });
+            //Использование ветви branch метода Map для обслуживания другой линии в конвеере запросов
+            //а  конец  запросов служит метод Run, не пуская дальше в конвеер следующий компонент 
+            //app.Map("/branch", branch =>
+            //{
+            //    branch.UseMiddleware<QueryStringMiddleWare>();
 
 
-                branch.Use(async (cont, next) =>
-                {
-                   
-                    await cont.Response.WriteAsync("dron\n");
-                    await next();
+            //    branch.Use(async (cont, next) =>
+            //    {
 
-                });
+            //        await cont.Response.WriteAsync("dron\n");
+            //        await next();
 
-                // метод Run() отмечает конец конвеера линии запросов
-                branch.Run(async(context) => await context.Response.WriteAsync("game over middleware pipeline"));
+            //    });
 
-                branch.Use(async (context, next) =>
-                {
+            //    // метод Run() отмечает конец конвеера линии запросов
+            //    branch.Run(async(context) => await context.Response.WriteAsync("game over middleware pipeline"));
 
-                    await context.Response.WriteAsync($"Branch Middleware");
+            //    branch.Use(async (context, next) =>
+            //    {
 
-
-                });
-            });
+            //        await context.Response.WriteAsync($"Branch Middleware");
 
 
+            //    });
+            //});
 
 
+            //Компоненты на основе классов могут быть написаны так, чтобы их можно было использовать
+            //как обычное промежуточное ПО, так и как терминальное промежуточное ПО, как показано.
+            //Компонент будет пересылать запросы только в том случае, если конструктору было предоставлено
+            //ненулевое значение для nextDelegate параметр
+
+            //QueryStringMiddleWare ware = new QueryStringMiddleWare();
+            //app.Map("/branch2", branch2 => { branch2.Run(ware.Invoke); });
+
+            //RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
+            //app.Map("/branch", branch => { branch.Run(request); });
+
+            // или так
+            app.Map("/branch3", branch3 => branch3.Run(new QueryStringMiddleWare().Invoke));
 
 
             //app.Map("/branch", branch =>
@@ -280,8 +284,6 @@ namespace Platform
             app.UseMiddleware<QueryStringMiddleWare>();
 
             app.UseRouting();
-
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapGet("/", async context =>
