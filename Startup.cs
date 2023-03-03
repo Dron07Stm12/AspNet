@@ -50,37 +50,87 @@ namespace Platform
             //            context.Request.Query["id"] == "5";
             //},  branch => branch.Use(async (cont, next) => { await cont.Response.WriteAsync("Lero"); }));
 
+
+
             //ветвь
-            app.Map("/branch", branch =>
-            {
+            //app.Map("/branch11", branch =>
+            //{
+            //    branch.Use(async (cont, next) =>
+            //    {
 
-               
-               
-                branch.Use(async (cont, next) =>
-                {
-
-                    if (cont.Request.Method == HttpMethods.Get && cont.Request.Query["my"] == "true")
-                    {
-                        await cont.Response.WriteAsync("Dron\n");
-                    }
-
-                    //await cont.Response.WriteAsync("Dron\t");
-                    await next();
-                });
-                //или регистрируем ПО(мiddleware) через класс
-                //branch.UseMiddleware<QueryStringMiddleWare>();
-
-                //branch.Use(async (cont, next) =>
-                //{
-                //    await cont.Response.WriteAsync($"Branch Middleware");
-                //    //await next();
-                //});
-                RequestDelegate handler = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate in methods Run"); };
-                branch.Run(handler);
-                //branch.Run(async(context) => { await context.Response.WriteAsync("methods Run"); });
+            //        if (cont.Request.Method == HttpMethods.Get && cont.Request.Query["my"] == "true")
+            //        {
+            //            await cont.Response.WriteAsync("Dron\n");
+            //        }
 
 
-            });
+            //        await next();
+            //    });
+
+            //    //    //или регистрируем ПО(мiddleware) через класс
+            //    //    branch.UseMiddleware<QueryStringMiddleWare>();
+
+            //    RequestDelegate handler = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate in methods Run"); };
+            //    branch.Run(handler);
+            //    //branch.Run(async(context) => { await context.Response.WriteAsync("methods Run"); });
+            //});
+
+
+
+
+
+            //RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
+            ////RequestDelegate request1 = async (con) => await con.Response.WriteAsync("lymbda RequestDelegate2");
+
+            //RequestDelegate request2 = async delegate (HttpContext http)
+            //{
+            //    if (http != null)
+            //    {
+            //        await http.Response.WriteAsync("");
+            //    }
+
+            //};
+
+
+
+            //Action<IApplicationBuilder> configuration = configuration =>  configuration.Run(request2);
+            ////app.Map("/examination",configuration);
+
+
+
+            //Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
+            //{
+            //    await context.Response.WriteAsync("func");
+            //    await task();
+            //};
+
+
+
+
+            //Action<IApplicationBuilder> value = delegate (IApplicationBuilder builder)
+            //{
+
+            //    builder.Use(func);
+
+            //    //builder.Map("/branch5", brench => brench.Run(request1));
+            //    //builder.Use(async (cont, next) => { await cont.Response.WriteAsync("use");
+            //    //    if (next != null)
+            //    //    {
+            //    //        await next();
+
+            //    //    }
+
+            //    //});
+            //    //builder.Run(request);         
+            //};
+
+
+            //app.Map("/branch",value);
+            //app.Map("/br", value => value.Run(request2));
+            //app.Map("/branch2", branch2 => branch2.Run(request));
+            //QueryStringMiddleWare query = new QueryStringMiddleWare();
+            //app.Map("/branch3", branch3 => branch3.Run(query.Invoke));
+            //app.Map("/branch", branch => branch.Run(new QueryStringMiddleWare().Invoke));
 
 
 
@@ -148,6 +198,8 @@ namespace Platform
             //пользователя, связанного с запросом.
 
 
+
+
             //метод Use регистрирует компонент промежуточного слоя(ПО) в методе Configure
             //для обработки его(компонента) через конвеер запросов
             //app.Use(async (context, next) =>
@@ -164,10 +216,64 @@ namespace Platform
             //});
 
 
-            //app.Map("branch", branch => {
+            //// метод MapWhen - форма запроса localhost/?id
+            //app.MapWhen(cont => cont.Request.Query.Keys.Contains("id"),
+            //           branch => {
+            //               branch.UseMiddleware<QueryStringMiddleWare>();
+            //               branch.UseMiddleware<QueryStringMiddleWare>();
+            //               branch.UseMiddleware<QueryStringMiddleWare>();
+            //               branch.UseMiddleware<QueryStringMiddleWare>();
+            //               branch.Use(async (cont, next) => { await cont.Response.WriteAsync("Lero"); });
+            //           });
+
+
+
+
+
+            app.Map("/branch", branch =>
+            {
+                branch.UseMiddleware<QueryStringMiddleWare>();
+
+                branch.Use(async (cont, next) =>
+                {
+                   
+                    await cont.Response.WriteAsync("dron\n");
+                    await next();
+
+                });
+
+
+                branch.Use(async (cont, next) =>
+                {
+                   
+                    await cont.Response.WriteAsync("dron\n");
+                    await next();
+
+                });
+
+                // метод Run() отмечает конец конвеера линии запросов
+                branch.Run(async(context) => await context.Response.WriteAsync("game over middleware pipeline"));
+
+                branch.Use(async (context, next) =>
+                {
+
+                    await context.Response.WriteAsync($"Branch Middleware");
+
+
+                });
+            });
+
+
+
+
+
+
+            //app.Map("/branch", branch =>
+            //{
             //    branch.UseMiddleware<QueryStringMiddleWare>();
-            //    branch.Use(async(context,next) => {await context.Response.WriteAsync("Nata"); });
+            //    branch.Use(async (context, next) => { await context.Response.WriteAsync("Nata"); });
             //});
+
 
 
             //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
@@ -184,7 +290,7 @@ namespace Platform
                 });
             });
 
-           
+
         }
 
 
