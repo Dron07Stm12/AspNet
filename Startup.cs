@@ -12,6 +12,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using static System.Net.WebRequestMethods;
+using Microsoft.Extensions.Options;
+using Platform.Platform;
+using Microsoft.AspNetCore.Builder.Extensions;
 
 namespace Platform
 {
@@ -24,10 +27,15 @@ namespace Platform
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            //services.Configure<MessageOptions>(options => { options.CityName = "Albany"; });
+            //Action<MessageOptions> action = delegate(MessageOptions messageOptions) { messageOptions.CityName = "Japan";};
+            ////services.Configure<MessageOptions>(action);
+            //services.Configure(action);
+           
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public  void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public  void Configure(IApplicationBuilder app, IWebHostEnvironment env/*,IOptions<MessageOptions> msgOptions*/)
         {
             if (env.IsDevelopment())
             {
@@ -98,7 +106,7 @@ namespace Platform
 
 
 
-            //Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
+            //Func<HttpContext, Func<Task>,Task> func = async delegate (HttpContext context, Func<Task> task)
             //{
             //    await context.Response.WriteAsync("func");
             //    await task();
@@ -125,7 +133,7 @@ namespace Platform
             //};
 
 
-            //app.Map("/branch",value);
+            //app.Map("/branch", value);
             //app.Map("/br", value => value.Run(request2));
             //app.Map("/branch2", branch2 => branch2.Run(request));
             //QueryStringMiddleWare query = new QueryStringMiddleWare();
@@ -215,16 +223,85 @@ namespace Platform
 
             //});
 
+            //Func<HttpContext, bool> predicate2 = delegate (HttpContext context)
+            //{
+            //    if (context.Request.Query.ContainsKey("pre"))
+            //    {
+            //        return true;
+            //    }
+            //    else
+            //    {
+            //        return false;
+            //    }
+            //};
 
-            //// метод MapWhen - форма запроса localhost/?id
-            //app.MapWhen(cont => cont.Request.Query.Keys.Contains("id"),
-            //           branch => {
-            //               branch.UseMiddleware<QueryStringMiddleWare>();
-            //               branch.UseMiddleware<QueryStringMiddleWare>();
-            //               branch.UseMiddleware<QueryStringMiddleWare>();
-            //               branch.UseMiddleware<QueryStringMiddleWare>();
-            //               branch.Use(async (cont, next) => { await cont.Response.WriteAsync("Lero"); });
-            //           });
+            //RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
+            //app.MapWhen(predicate2, brench =>
+            //{
+            //    brench.UseMiddleware<QueryStringMiddleWare>();
+            //    brench.UseMiddleware<QueryStringMiddleWare>();
+            //    //QueryStringMiddleWare query = new QueryStringMiddleWare();
+            //    //brench.Run(query.Invoke);
+            //    brench.Run(request);
+            //    brench.UseMiddleware<QueryStringMiddleWare>();
+            //    brench.Use(async (cont, next) => { await cont.Response.WriteAsync("dron"); });
+
+            //});
+
+
+
+
+            RequestDelegate request2 = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
+            // Использование в обьекте класса QueryStringMiddleWare метода Run() - не нулевого значения делегата RequestDelegate
+            // метод MapWhen - форма запроса(с предикатом) localhost/?id
+            app.MapWhen(cont => cont.Request.Query.Keys.Contains("id"),
+                       branch =>
+                       {                       
+                           branch.Use(async (context, next) =>
+                           {
+                               await context.Response.WriteAsync("Custom Middleware2 \n");
+                               await next();
+                           });
+                                        
+                           branch.Run(new QueryStringMiddleWare(request2).Invoke);
+
+                         
+                       });
+            //или с помощью делегата, безимянного блока кода
+            Func<HttpContext, bool> predicate = delegate (HttpContext context)
+            {
+                if (context.Request.Query.ContainsKey("pre"))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            };
+            app.MapWhen(predicate,
+                      branch =>
+                      {
+                          branch.Use(async (context, next) =>
+                          {
+                              await context.Response.WriteAsync("Custom Middleware2 \n");
+                              await next();
+                          });
+
+                          branch.Run(new QueryStringMiddleWare(request2).Invoke);
+
+
+                      });
+
+            //Метод Map - без условия запроса(предиката)
+            app.Map("/dron", cont => {
+
+                cont.Use(async(cont,next) => { await cont.Response.WriteAsync("PO\n"); await next();});
+                cont.Run(new QueryStringMiddleWare(request2).Invoke);
+                cont.UseMiddleware<QueryStringMiddleWare>();
+                
+            
+            });
 
 
 
@@ -263,25 +340,65 @@ namespace Platform
             //ненулевое значение для nextDelegate параметр
 
             //QueryStringMiddleWare ware = new QueryStringMiddleWare();
-            //app.Map("/branch2", branch2 => { branch2.Run(ware.Invoke); });
+            //app.Map("/branch2", branch2 => { branch2.Run(ware.Invoke);});
 
             //RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
-            //app.Map("/branch", branch => { branch.Run(request); });
+            //RequestDelegate requestDelegate = async (cont) => { await cont.Response.WriteAsync("rt"); };
+            //app.Map("/branch", branch => { branch.Run(request);});
 
             // или так
-            app.Map("/branch3", branch3 => branch3.Run(new QueryStringMiddleWare().Invoke));
+            //Не существует эквивалента метода UseMiddleware для ПО промежуточного слоя терминала,
+            //поэтому необходимо использовать метод Run, создав новый экземпляр класса промежуточного
+            //программного обеспечения и выбор его метода Invoke. Использование метода Run
+            //не изменяет вывод из ПО промежуточного слоя
 
-
+            //app.Map("/branch3", branch3 => branch3.Run(new QueryStringMiddleWare().Invoke));
+            //app.Map("/branch5", branch3 => branch3.Run(requestDelegate));
+            //QueryStringMiddleWare query = new QueryStringMiddleWare();
+            //app.Map("/br", br => br.Run(query.Invoke2));
+            //app.Map("/br2", br2 => br2.Run(QueryStringMiddleWare.Invoke3));
             //app.Map("/branch", branch =>
             //{
             //    branch.UseMiddleware<QueryStringMiddleWare>();
             //    branch.Use(async (context, next) => { await context.Response.WriteAsync("Nata"); });
             //});
 
+            //Func<HttpContext, bool> predicate = http => http.Request.Query["id"] == "5";
+
+
 
 
             //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
-            app.UseMiddleware<QueryStringMiddleWare>();
+            //app.UseMiddleware<QueryStringMiddleWare>();
+
+            //app.Use(async (context, next) =>
+            //{
+            //     await context.Response.WriteAsync("Custom Middleware \n");
+            //     await next();
+
+            //});
+            //app.Map("/branch3", branch3 => branch3.Run(requestDelegate));
+            //app.UseMiddleware<QueryStringMiddleWare>();
+
+            //app.Use(async(context,next) => {
+
+            //    if (context.Request.Path == "/location")
+            //    {
+            //        MessageOptions opts = msgOptions.Value;
+            //        await context.Response.WriteAsync($"{opts.CityName},{opts.CountryName}");
+
+            //    }
+
+            //    else
+            //    {
+            //        await next();
+            //    }
+
+            //});
+
+
+
+
 
             app.UseRouting();
             app.UseEndpoints(endpoints =>

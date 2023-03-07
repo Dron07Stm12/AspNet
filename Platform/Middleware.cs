@@ -21,13 +21,14 @@ namespace Platform
         public QueryStringMiddleWare(RequestDelegate nextDelegate)
         {
             next = nextDelegate;
-           
+
         }
+
 
 
         public QueryStringMiddleWare()
         {
-                
+
         }
 
         //Метод Invoke вызывается ASP.NET Core при получении запроса и получении HttpContext объекта,
@@ -36,7 +37,7 @@ namespace Platform
         public async Task Invoke(HttpContext context)
         {
             if (context.Request.Method == HttpMethods.Get
-            && context.Request.Query["custom"] == "true")
+            /*&& context.Request.Query["custom"] == "true"*/)
             {
 
                 await context.Response.WriteAsync("Class-based Middleware \n");
@@ -51,6 +52,52 @@ namespace Platform
                 await next(context);
             }
 
+            //await next(context);
+
         }
+
+        //public async Task Invoke2(HttpContext context)
+        //{
+        //    if (context.Request.Method == HttpMethods.Get
+        //    && context.Request.Query["custom"] == "true")
+        //    {
+
+        //        await context.Response.WriteAsync("Class-based Middleware \n");
+        //    }
+        //    //Одно важное отличие промежуточного ПО на основе классов заключается в том, что объект HttpContext
+        //    //должен использоваться в качестве аргумента, когда вызывая RequestDelete для пересылки запроса, например:
+        //    //await next(context);
+
+        //    if (next != null)
+        //    {
+
+        //        await next(context);
+        //    }
+
+        //}
+
+
+        //public static async Task Invoke3(HttpContext context)
+        //{
+        //    if (context.Request.Method == HttpMethods.Get
+        //    && context.Request.Query["custom"] == "true")
+        //    {
+
+        //        await context.Response.WriteAsync("Class-based Middleware \n");
+        //    }
+        //    //Одно важное отличие промежуточного ПО на основе классов заключается в том, что объект HttpContext
+        //    //должен использоваться в качестве аргумента, когда вызывая RequestDelete для пересылки запроса, например:
+        //    //await next(context);
+
+        //    //if (next != null)
+        //    //{
+
+        //    //    await next(context);
+        //    //}
+
+        //}
+
+
+
     }
 }
