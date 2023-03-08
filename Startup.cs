@@ -27,15 +27,17 @@ namespace Platform
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            //Настройка промежуточного программного обеспечения - общий шаблон
             //services.Configure<MessageOptions>(options => { options.CityName = "Albany"; });
-            //Action<MessageOptions> action = delegate(MessageOptions messageOptions) { messageOptions.CityName = "Japan";};
-            ////services.Configure<MessageOptions>(action);
+
+            Action<MessageOptions> action = delegate (MessageOptions messageOptions) { messageOptions.CityName = "Japan"; };
+            services.Configure<MessageOptions>(action);
             //services.Configure(action);
-           
+
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public  void Configure(IApplicationBuilder app, IWebHostEnvironment env/*,IOptions<MessageOptions> msgOptions*/)
+        // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IOptions<MessageOptions> msgOptions)
         {
             if (env.IsDevelopment())
             {
@@ -84,56 +86,39 @@ namespace Platform
             //});
 
 
-
-
-
             //RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
             ////RequestDelegate request1 = async (con) => await con.Response.WriteAsync("lymbda RequestDelegate2");
 
-            //RequestDelegate request2 = async delegate (HttpContext http)
+
+            //Использование непосредственно делегата RequestDelegate и Action
+            //RequestDelegate request3 = async delegate (HttpContext http)
             //{
-            //    if (http != null)
-            //    {
-            //        await http.Response.WriteAsync("");
-            //    }
+            // await http.Response.WriteAsync("run");
 
             //};
+            //Action<IApplicationBuilder> configuration = configuration => configuration.Run(request3);
+            //app.Map("/examination", configuration);
 
 
 
-            //Action<IApplicationBuilder> configuration = configuration =>  configuration.Run(request2);
-            ////app.Map("/examination",configuration);
 
-
-
-            //Func<HttpContext, Func<Task>,Task> func = async delegate (HttpContext context, Func<Task> task)
+            //Непосредственное использование делегатов Func,Action и метода Map
+            //Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
             //{
             //    await context.Response.WriteAsync("func");
             //    await task();
             //};
 
-
-
-
             //Action<IApplicationBuilder> value = delegate (IApplicationBuilder builder)
             //{
-
-            //    builder.Use(func);
-
-            //    //builder.Map("/branch5", brench => brench.Run(request1));
-            //    //builder.Use(async (cont, next) => { await cont.Response.WriteAsync("use");
-            //    //    if (next != null)
-            //    //    {
-            //    //        await next();
-
-            //    //    }
-
-            //    //});
-            //    //builder.Run(request);         
+            //    builder.Use(func);    
             //};
 
-
             //app.Map("/branch", value);
+
+
+
+
             //app.Map("/br", value => value.Run(request2));
             //app.Map("/branch2", branch2 => branch2.Run(request));
             //QueryStringMiddleWare query = new QueryStringMiddleWare();
@@ -170,26 +155,15 @@ namespace Platform
             //    await cont.Response.WriteAsync($"\n status code: {cont.Response.StatusCode}");
             //});
 
-            ////короткое замыкание
-            //app.Use(async(cont,next) => {
-
-            //    if (cont.Request.Path == "/short")
-            //    {
-            //       await cont.Response.WriteAsync("\n short");
-            //    }
-            //    else
-            //    {
-            //        await next.Invoke();    
-            //    }
-
-            //});
 
 
 
 
 
-            //app.Use(async(cont,next) => {
-            //    if (cont.Request.Path == "/dron")
+            //короткое замыкание(конвеера) в запросе(Request)
+            //app.Use(async (cont, next) =>
+            //{
+            //    if (cont.Request.Path == "/kz")
             //    {
             //        await cont.Response.WriteAsync($"Request Short Circuited");
 
@@ -204,9 +178,6 @@ namespace Platform
             //запрос к следующему компоненту промежуточного программного обеспечения в конвейере.
             //Объект HttpContext описывает HTTP-запрос и HTTP-ответ, а также предоставляет дополнительный контекст, включая сведения.
             //пользователя, связанного с запросом.
-
-
-
 
             //метод Use регистрирует компонент промежуточного слоя(ПО) в методе Configure
             //для обработки его(компонента) через конвеер запросов
@@ -223,7 +194,29 @@ namespace Platform
 
             //});
 
-            //Func<HttpContext, bool> predicate2 = delegate (HttpContext context)
+
+
+
+
+
+            //RequestDelegate request2 = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
+            //// Использование в обьекте класса QueryStringMiddleWare метода Run() - не нулевого значения делегата RequestDelegate
+            //// метод MapWhen - форма запроса(с предикатом) localhost/?id
+            //app.MapWhen(cont => cont.Request.Query.Keys.Contains("id"),
+            //           branch =>
+            //           {                       
+            //               branch.Use(async (context, next) =>
+            //               {
+            //                   await context.Response.WriteAsync("Custom Middleware2 \n");
+            //                   await next();
+            //               });
+
+            //               branch.Run(new QueryStringMiddleWare(request2).Invoke);
+
+
+            //           });
+            ////или с помощью делегата, безимянного блока кода
+            //Func<HttpContext, bool> predicate = delegate (HttpContext context)
             //{
             //    if (context.Request.Query.ContainsKey("pre"))
             //    {
@@ -234,104 +227,36 @@ namespace Platform
             //        return false;
             //    }
             //};
+            //app.MapWhen(predicate,
+            //          branch =>
+            //          {
+            //              branch.Use(async (context, next) =>
+            //              {
+            //                  await context.Response.WriteAsync("Custom Middleware2 \n");
+            //                  await next();
+            //              });
 
-            //RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
-            //app.MapWhen(predicate2, brench =>
+            //              branch.Run(new QueryStringMiddleWare(request2).Invoke);
+
+
+            //          });
+
+            ////Метод Map - без условия запроса(предиката)
+            //app.Map("/dron", cont =>
             //{
-            //    brench.UseMiddleware<QueryStringMiddleWare>();
-            //    brench.UseMiddleware<QueryStringMiddleWare>();
-            //    //QueryStringMiddleWare query = new QueryStringMiddleWare();
-            //    //brench.Run(query.Invoke);
-            //    brench.Run(request);
-            //    brench.UseMiddleware<QueryStringMiddleWare>();
-            //    brench.Use(async (cont, next) => { await cont.Response.WriteAsync("dron"); });
+
+            //    cont.Use(async (cont, next) => { await cont.Response.WriteAsync("PO\n"); await next(); });
+            //    cont.UseMiddleware<QueryStringMiddleWare>();
+            //    cont.Run(new QueryStringMiddleWare(request2).Invoke);
+
+            //    cont.UseMiddleware<QueryStringMiddleWare>();
+
 
             //});
 
 
 
 
-            RequestDelegate request2 = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
-            // Использование в обьекте класса QueryStringMiddleWare метода Run() - не нулевого значения делегата RequestDelegate
-            // метод MapWhen - форма запроса(с предикатом) localhost/?id
-            app.MapWhen(cont => cont.Request.Query.Keys.Contains("id"),
-                       branch =>
-                       {                       
-                           branch.Use(async (context, next) =>
-                           {
-                               await context.Response.WriteAsync("Custom Middleware2 \n");
-                               await next();
-                           });
-                                        
-                           branch.Run(new QueryStringMiddleWare(request2).Invoke);
-
-                         
-                       });
-            //или с помощью делегата, безимянного блока кода
-            Func<HttpContext, bool> predicate = delegate (HttpContext context)
-            {
-                if (context.Request.Query.ContainsKey("pre"))
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            };
-            app.MapWhen(predicate,
-                      branch =>
-                      {
-                          branch.Use(async (context, next) =>
-                          {
-                              await context.Response.WriteAsync("Custom Middleware2 \n");
-                              await next();
-                          });
-
-                          branch.Run(new QueryStringMiddleWare(request2).Invoke);
-
-
-                      });
-
-            //Метод Map - без условия запроса(предиката)
-            app.Map("/dron", cont => {
-
-                cont.Use(async(cont,next) => { await cont.Response.WriteAsync("PO\n"); await next();});
-                cont.Run(new QueryStringMiddleWare(request2).Invoke);
-                cont.UseMiddleware<QueryStringMiddleWare>();
-                
-            
-            });
-
-
-
-
-            //Использование ветви branch метода Map для обслуживания другой линии в конвеере запросов
-            //а  конец  запросов служит метод Run, не пуская дальше в конвеер следующий компонент 
-            //app.Map("/branch", branch =>
-            //{
-            //    branch.UseMiddleware<QueryStringMiddleWare>();
-
-
-            //    branch.Use(async (cont, next) =>
-            //    {
-
-            //        await cont.Response.WriteAsync("dron\n");
-            //        await next();
-
-            //    });
-
-            //    // метод Run() отмечает конец конвеера линии запросов
-            //    branch.Run(async(context) => await context.Response.WriteAsync("game over middleware pipeline"));
-
-            //    branch.Use(async (context, next) =>
-            //    {
-
-            //        await context.Response.WriteAsync($"Branch Middleware");
-
-
-            //    });
-            //});
 
 
             //Компоненты на основе классов могут быть написаны так, чтобы их можно было использовать
@@ -341,7 +266,7 @@ namespace Platform
 
             //QueryStringMiddleWare ware = new QueryStringMiddleWare();
             //app.Map("/branch2", branch2 => { branch2.Run(ware.Invoke);});
-
+            //RequestDelegate requestDelegate = async (cont) => { await cont.Response.WriteAsync("rt"); };
             //RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
             //RequestDelegate requestDelegate = async (cont) => { await cont.Response.WriteAsync("rt"); };
             //app.Map("/branch", branch => { branch.Run(request);});
@@ -371,6 +296,11 @@ namespace Platform
             //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
             //app.UseMiddleware<QueryStringMiddleWare>();
 
+
+
+
+
+
             //app.Use(async (context, next) =>
             //{
             //     await context.Response.WriteAsync("Custom Middleware \n");
@@ -380,22 +310,29 @@ namespace Platform
             //app.Map("/branch3", branch3 => branch3.Run(requestDelegate));
             //app.UseMiddleware<QueryStringMiddleWare>();
 
-            //app.Use(async(context,next) => {
 
-            //    if (context.Request.Path == "/location")
-            //    {
-            //        MessageOptions opts = msgOptions.Value;
-            //        await context.Response.WriteAsync($"{opts.CityName},{opts.CountryName}");
 
-            //    }
+            app.Use(async (context, next) =>
+            {
 
-            //    else
-            //    {
-            //        await next();
-            //    }
+                if (context.Request.Path == "/location")
+                {
+                    MessageOptions opts = msgOptions.Value;
+                    await context.Response.WriteAsync($"{opts.CityName}\t,{opts.CountryName}\n");
 
-            //});
+                }
 
+                else
+                {
+                    await next();
+                }
+
+            });
+
+
+            ////app.UseMiddleware<LocationMiddleware>();
+            //RequestDelegate request = null;
+            //app.Map("/v", v => v.Run(new LocationMiddleware(request,msgOptions).Invoke2));
 
 
 
@@ -478,4 +415,98 @@ namespace Platform
 //app.Run(async (context) => await context.Response.WriteAsync($"Date: {date}"));
 
 //app.UseEndpoints(end => { end.MapGet("/", async c =>  await c.Response.WriteAsync("Kampot")); });
+
+
+
+
+//Использование ветви branch метода Map для обслуживания другой линии в конвеере запросов
+//а  конец  запросов служит метод Run, не пуская дальше в конвеер следующий компонент 
+//app.Map("/branch", branch =>
+//{
+//    branch.UseMiddleware<QueryStringMiddleWare>();
+
+
+//    branch.Use(async (cont, next) =>
+//    {
+
+//        await cont.Response.WriteAsync("dron\n");
+//        await next();
+
+//    });
+
+//    // метод Run() отмечает конец конвеера линии запросов
+//    branch.Run(async(context) => await context.Response.WriteAsync("game over middleware pipeline"));
+
+//    branch.Use(async (context, next) =>
+//    {
+
+//        await context.Response.WriteAsync($"Branch Middleware");
+
+
+//    });
+//});
+
+
+
+
+//Func<HttpContext, bool> predicate2 = delegate (HttpContext context)
+//{
+//    if (context.Request.Query.ContainsKey("pre"))
+//    {
+//        return true;
+//    }
+//    else
+//    {
+//        return false;
+//    }
+//};
+
+//RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
+//app.MapWhen(predicate2, brench =>
+//{
+//    brench.UseMiddleware<QueryStringMiddleWare>();
+//    brench.UseMiddleware<QueryStringMiddleWare>();
+//    //QueryStringMiddleWare query = new QueryStringMiddleWare();
+//    //brench.Run(query.Invoke);
+//    brench.Run(request);
+//    brench.UseMiddleware<QueryStringMiddleWare>();
+//    brench.Use(async (cont, next) => { await cont.Response.WriteAsync("dron"); });
+
+//});
+
+
+////короткое замыкание
+//app.Use(async(cont,next) => {
+
+//    if (cont.Request.Path == "/short")
+//    {
+//       await cont.Response.WriteAsync("\n short");
+//    }
+//    else
+//    {
+//        await next.Invoke();    
+//    }
+
+//});
+
+
+//работа делегата  RequestDelegate и метода Invoke класса Middleware
+//public delegate Task RequestDelegate(HttpContext context) - сигнатура
+//app.Map("/loc2", config => config.Run(new QueryStringMiddleWare(request2).Invoke));
+//app.Map("/loc1", config => config.Run(new QueryStringMiddleWare().Invoke));
+//RequestDelegate requestDelegate = async (cont) => { await cont.Response.WriteAsync("rt\n");};
+//RequestDelegate requestDelegate2 = async (cont) => { await cont.Response.WriteAsync("rt\n"); };
+//RequestDelegate requestDelegate1 = null;
+
+//RequestDelegate request = async delegate (HttpContext http) {
+//    await http.Response.WriteAsync("delegate RequestDelegate2\n");
+//    if (requestDelegate1 != null)
+//    {
+//        await requestDelegate1(http);
+//    }              
+//    await requestDelegate(http);
+//    await requestDelegate2(http);
+//};
+
+//app.Map("/loc3", config => config.Run(request));
 

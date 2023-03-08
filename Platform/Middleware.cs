@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
+using Platform.Platform;
+
 namespace Platform
 {
 
@@ -23,7 +26,8 @@ namespace Platform
             next = nextDelegate;
 
         }
-
+        RequestDelegate requestDelegate = async (cont) => { await cont.Response.WriteAsync("rt\n"); };
+        RequestDelegate requestDelegate2 = async (cont) => { await cont.Response.WriteAsync("rt\n"); };
 
 
         public QueryStringMiddleWare()
@@ -34,6 +38,7 @@ namespace Platform
         //Метод Invoke вызывается ASP.NET Core при получении запроса и получении HttpContext объекта,
         //который обеспечивает доступ к запросу и ответу, используя те же классы, которые получает
         //промежуточное ПО лямбда-функции. RequestDelegate возвращает Task, что позволяет ему работать асинхронно.
+        //public delegate Task RequestDelegate(HttpContext context) - сигнатура
         public async Task Invoke(HttpContext context)
         {
             if (context.Request.Method == HttpMethods.Get
@@ -52,29 +57,30 @@ namespace Platform
                 await next(context);
             }
 
-            //await next(context);
+            await requestDelegate(context);
+            await requestDelegate2(context);
 
         }
 
-        //public async Task Invoke2(HttpContext context)
-        //{
-        //    if (context.Request.Method == HttpMethods.Get
-        //    && context.Request.Query["custom"] == "true")
-        //    {
+        public async Task Invoke2(HttpContext context)
+        {
+            if (context.Request.Method == HttpMethods.Get
+            && context.Request.Query["custom"] == "true")
+            {
 
-        //        await context.Response.WriteAsync("Class-based Middleware \n");
-        //    }
-        //    //Одно важное отличие промежуточного ПО на основе классов заключается в том, что объект HttpContext
-        //    //должен использоваться в качестве аргумента, когда вызывая RequestDelete для пересылки запроса, например:
-        //    //await next(context);
+                await context.Response.WriteAsync("Class-based Middleware \n");
+            }
+            //Одно важное отличие промежуточного ПО на основе классов заключается в том, что объект HttpContext
+            //должен использоваться в качестве аргумента, когда вызывая RequestDelete для пересылки запроса, например:
+            //await next(context);
 
-        //    if (next != null)
-        //    {
+            if (next != null)
+            {
 
-        //        await next(context);
-        //    }
+                await next(context);
+            }
 
-        //}
+        }
 
 
         //public static async Task Invoke3(HttpContext context)
@@ -100,4 +106,51 @@ namespace Platform
 
 
     }
+
+
+    public class LocationMiddleware {
+
+        private RequestDelegate request;
+        private MessageOptions message;
+
+        public LocationMiddleware(RequestDelegate requ, IOptions<MessageOptions> options)
+        {
+            request = requ;
+            message = options?.Value;
+                
+        }
+
+        
+
+        public async Task Invoke(HttpContext context) 
+        {
+            if (context.Request.Path == "/location")
+            {
+                await context.Response.WriteAsync($"{message?.CountryName} , {message?.CityName} \n");
+            }
+
+            else
+            { await request(context); }
+        }
+
+
+        public async Task Invoke2(HttpContext context)
+        {
+            
+            await context.Response.WriteAsync($"{message?.CountryName} , {message?.CityName} \n");
+
+            if (request != null)
+            {
+                await request(context);
+            }
+
+           
+            
+        }
+
+
+    }
+
+
+
 }
