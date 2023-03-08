@@ -312,25 +312,25 @@ namespace Platform
 
 
 
-            app.Use(async (context, next) =>
-            {
+            //app.Use(async (context, next) =>
+            //{
 
-                if (context.Request.Path == "/location")
-                {
-                    MessageOptions opts = msgOptions.Value;
-                    await context.Response.WriteAsync($"{opts.CityName}\t,{opts.CountryName}\n");
+            //    if (context.Request.Path == "/location")
+            //    {
+            //        MessageOptions opts = msgOptions.Value;
+            //        await context.Response.WriteAsync($"{opts.CityName}\t,{opts.CountryName}\n");
 
-                }
+            //    }
 
-                else
-                {
-                    await next();
-                }
+            //    else
+            //    {
+            //        await next();
+            //    }
 
-            });
+            //});
 
 
-            ////app.UseMiddleware<LocationMiddleware>();
+            app.UseMiddleware<LocationMiddleware>();
             //RequestDelegate request = null;
             //app.Map("/v", v => v.Run(new LocationMiddleware(request,msgOptions).Invoke2));
 
