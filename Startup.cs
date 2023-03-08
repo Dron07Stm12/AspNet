@@ -330,9 +330,9 @@ namespace Platform
             //});
 
 
-            app.UseMiddleware<LocationMiddleware>();
-            //RequestDelegate request = null;
-            //app.Map("/v", v => v.Run(new LocationMiddleware(request,msgOptions).Invoke2));
+            //app.UseMiddleware<LocationMiddleware>();
+            RequestDelegate request = null;
+            app.Map("/v", v => v.Run(new LocationMiddleware(request, msgOptions).Invoke2));
 
 
 
