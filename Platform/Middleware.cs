@@ -27,8 +27,8 @@ namespace Platform
 
         }
         RequestDelegate requestDelegate = async (cont) => { await cont.Response.WriteAsync("rt\n"); };
-        RequestDelegate requestDelegate2 = async (cont) => { await cont.Response.WriteAsync("rt\n"); };
-
+        RequestDelegate requestDelegate2 = async (cont) => { await cont.Response.WriteAsync("rt2\n"); };
+        RequestDelegate requestDelegate3 = async (cont) => { await cont.Response.WriteAsync("rt3\n"); };
 
         public QueryStringMiddleWare()
         {
@@ -53,19 +53,19 @@ namespace Platform
 
             if (next != null)
             {
-
+                await requestDelegate(context);
+                await requestDelegate2(context);
                 await next(context);
             }
 
-            await requestDelegate(context);
-            await requestDelegate2(context);
+           
 
         }
 
         public async Task Invoke2(HttpContext context)
         {
             if (context.Request.Method == HttpMethods.Get
-            && context.Request.Query["custom"] == "true")
+           /* && context.Request.Query["custom"] == "true"*/)
             {
 
                 await context.Response.WriteAsync("Class-based Middleware \n");
@@ -74,11 +74,16 @@ namespace Platform
             //должен использоваться в качестве аргумента, когда вызывая RequestDelete для пересылки запроса, например:
             //await next(context);
 
-            if (next != null)
-            {
+            //if (next != null)
+            //{
 
-                await next(context);
-            }
+            //    await next(context);
+            //}
+            await requestDelegate(context);
+            await requestDelegate2(context);
+            await requestDelegate(context);
+            await requestDelegate2(context);
+            await next(context);
 
         }
 

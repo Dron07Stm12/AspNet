@@ -15,6 +15,7 @@ using static System.Net.WebRequestMethods;
 using Microsoft.Extensions.Options;
 using Platform.Platform;
 using Microsoft.AspNetCore.Builder.Extensions;
+using Platform;
 
 namespace Platform
 {
@@ -199,22 +200,7 @@ namespace Platform
 
 
 
-            //RequestDelegate request2 = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
-            //// »спользование в обьекте класса QueryStringMiddleWare метода Run() - не нулевого значени€ делегата RequestDelegate
-            //// метод MapWhen - форма запроса(с предикатом) localhost/?id
-            //app.MapWhen(cont => cont.Request.Query.Keys.Contains("id"),
-            //           branch =>
-            //           {                       
-            //               branch.Use(async (context, next) =>
-            //               {
-            //                   await context.Response.WriteAsync("Custom Middleware2 \n");
-            //                   await next();
-            //               });
 
-            //               branch.Run(new QueryStringMiddleWare(request2).Invoke);
-
-
-            //           });
             ////или с помощью делегата, безим€нного блока кода
             //Func<HttpContext, bool> predicate = delegate (HttpContext context)
             //{
@@ -264,8 +250,44 @@ namespace Platform
             // омпонент будет пересылать запросы только в том случае, если конструктору было предоставлено
             //ненулевое значение дл€ nextDelegate параметр
 
+            //app.UseMiddleware<QueryStringMiddleWare>();
+            //app.UseMiddleware<QueryStringMiddleWare>();
+
+
+
+
+            //Func<HttpContext, bool> pred = delegate (HttpContext http) {
+
+            //    if (http.Request.Query.ContainsKey("pre"))
+            //    {
+            //        return true;
+            //    }
+            //    else
+            //    {
+            //         return false;
+            //    }
+
+            //};
+
+            //Action<IApplicationBuilder> action = delegate {
+
+            //    app.UseMiddleware<QueryStringMiddleWare>();
+            //    app.UseMiddleware<QueryStringMiddleWare>();
+            //    app.UseMiddleware<QueryStringMiddleWare>();
+            //    app.UseMiddleware<QueryStringMiddleWare>();
+
+            //};
+
+            //app.MapWhen(pred,action);
+
+
+
+
+
             //QueryStringMiddleWare ware = new QueryStringMiddleWare();
-            //app.Map("/branch2", branch2 => { branch2.Run(ware.Invoke);});
+            //app.Map("/branch2", branch2 => { branch2.Run(ware.Invoke2);});
+            //app.Map("/branch3", branch3 => branch3.Run(new QueryStringMiddleWare().Invoke));
+
             //RequestDelegate requestDelegate = async (cont) => { await cont.Response.WriteAsync("rt"); };
             //RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
             //RequestDelegate requestDelegate = async (cont) => { await cont.Response.WriteAsync("rt"); };
@@ -331,20 +353,28 @@ namespace Platform
 
 
             //app.UseMiddleware<LocationMiddleware>();
-            RequestDelegate request = null;
-            app.Map("/v", v => v.Run(new LocationMiddleware(request, msgOptions).Invoke2));
+            //RequestDelegate request = null;
+            //app.Map("/v", v => v.Run(new LocationMiddleware(request, msgOptions).Invoke2));
 
 
 
 
-            app.UseRouting();
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("Hello World!");
-                });
-            });
+            app.UseMiddleware<Population>();
+            app.UseMiddleware<Capital>();
+
+
+            //app.Use(async(cont,next) => { await cont.Response.WriteAsync("Terminal Middleware Reached");
+            //    await next();
+            //});
+
+            //app.UseRouting();
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    endpoints.MapGet("/", async context =>
+            //    {
+            //        await context.Response.WriteAsync("Hello World!");
+            //    });
+            //});
 
 
         }
@@ -509,4 +539,63 @@ namespace Platform
 //};
 
 //app.Map("/loc3", config => config.Run(request));
+
+
+
+
+//Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
+//{
+//    //выполнение в конвеере одной задачи
+//    await context.Response.WriteAsync("func\n");
+//    // ссылка в конвеере на следующее ѕќ(Use()) и так далее
+//    await task();
+//};
+////делегат дл€ метода MapWhen
+//Func<HttpContext, bool> predicate = delegate (HttpContext context)
+//{
+//    if (context.Request.Query.ContainsKey("pre"))
+//    {
+//        return true;
+//    }
+//    else
+//    {
+//        return false;
+//    }
+//};
+
+
+
+//// делегат RequestDelegate
+//RequestDelegate request2 = async delegate (HttpContext http) { await http.Response.WriteAsync("delegate RequestDelegate2"); };
+
+//// метод MapWhen - форма запроса(с предикатом) localhost/?id
+//app.MapWhen(predicate,
+//           branch =>
+//           {   //запросы ѕќ по конвееру 
+//               branch.Use(async (context, next) =>
+//               {
+//                   await context.Response.WriteAsync("Custom Middleware2 \n");
+//                   await next();
+//               });
+//               branch.Use(func);
+//               branch.Use(func);
+//               //branch.Run(request2);
+//               //branch.Map("/branch", br => br.Use(func));
+
+//               //ќстанавливает запросы и выполн€ет делегат( RequestDelegate) если он есть в классе QueryStringMiddleWare
+//               branch.Run(new QueryStringMiddleWare().Invoke2);
+
+
+//               branch.Run(new QueryStringMiddleWare(request2).Invoke);
+
+
+//           });
+
+
+//app.MapWhen(predicate => predicate.Request.Query.ContainsKey("pre2"),
+//       action => {
+//           action.Use(func);
+//           action.Use(func);
+
+//       });
 
