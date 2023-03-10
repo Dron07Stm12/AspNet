@@ -34,9 +34,9 @@ namespace Platform.Platform
                     case "monaco":
                       pop = 39_000;
                         break;
-                    case "ukr":
-                        pop = 50000000;
-                        break;
+                    //case "ukr":
+                    //    pop = 50000000;
+                    //    break;
                 }
 
                 if (pop.HasValue)

@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Platform.Platform;
+using Microsoft.AspNetCore.Authentication;
+using System.Net.Http;
 
 namespace Platform
 {
@@ -17,6 +19,7 @@ namespace Platform
 
     public class QueryStringMiddleWare
     {
+
         private RequestDelegate next;
 
         //Классы промежуточного ПО получают RequestDelegate в качестве параметра конструктора,
@@ -86,29 +89,6 @@ namespace Platform
             await next(context);
 
         }
-
-
-        //public static async Task Invoke3(HttpContext context)
-        //{
-        //    if (context.Request.Method == HttpMethods.Get
-        //    && context.Request.Query["custom"] == "true")
-        //    {
-
-        //        await context.Response.WriteAsync("Class-based Middleware \n");
-        //    }
-        //    //Одно важное отличие промежуточного ПО на основе классов заключается в том, что объект HttpContext
-        //    //должен использоваться в качестве аргумента, когда вызывая RequestDelete для пересылки запроса, например:
-        //    //await next(context);
-
-        //    //if (next != null)
-        //    //{
-
-        //    //    await next(context);
-        //    //}
-
-        //}
-
-
 
     }
 
