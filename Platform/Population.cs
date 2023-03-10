@@ -13,6 +13,11 @@ namespace Platform.Platform
                 this.request = request;
         }
 
+        public Population()
+        {
+                
+        }
+
 
         public async Task Invoke(HttpContext http) 
         {

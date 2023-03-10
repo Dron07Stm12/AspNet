@@ -73,15 +73,20 @@ namespace Platform
             //которые получают объект HttpContext и используют его для создания ответа.
 
 
-            
 
 
+            RequestDelegate requestDelegate = async delegate (HttpContext http) { await http.Response.WriteAsync("Midelwaire"); };
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapGet("middleware",new QueryStringMiddleWare(requestDelegate).Invoke2);
                 endpoints.MapGet("routing", async context => await context.Response.WriteAsync("Request Was Routed"));
-
+                endpoints.MapGet("population/london",requestDelegate);
+                endpoints.MapGet("population/paris", new Population().Invoke);
+                endpoints.MapGet("capital/uk", new Capital().Invoke);
             });
+
+            
 
             app.Use(async(cont,next) => { await cont.Response.WriteAsync("Path"); });
 
