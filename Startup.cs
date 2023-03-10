@@ -46,22 +46,35 @@ namespace Platform
                 app.UseDeveloperExceptionPage();
             }
 
-
-
             //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
             //app.UseMiddleware<QueryStringMiddleWare>();
-
 
             //app.UseMiddleware<Population>();
             //app.UseMiddleware<Capital>();
 
+
+
+
             //Добавление ПО в конвеер запросов 
             app.UseRouting();
 
-
+            //Метод UseEndpoints с помощью делегатов
             RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("Routed"); };
             Action<IEndpointRouteBuilder> action = delegate(IEndpointRouteBuilder endpoint) { endpoint.MapGet("route",request); };
             app.UseEndpoints(action);
+
+
+
+            //Метод UseEndpoints используется для определения маршрутов, которые сопоставляют URL-адреса с конечными точками
+            //URL-адреса сопоставляются с использованием шаблонов("routing"), которые сравниваются с путем URL-адресов запроса,
+            //и каждый маршрут создает отношение между одним шаблоном URL и одной конечной точкой
+            //Конечные точки определяются с помощью RequestDelegate, который является тем же делегатом, который используется
+            //обычным промежуточным программным обеспечением. Поэтому конечные точки — это асинхронные методы,
+            //которые получают объект HttpContext и используют его для создания ответа.
+
+
+            
+
 
 
             app.UseEndpoints(endpoints =>
@@ -70,7 +83,7 @@ namespace Platform
 
             });
 
-
+            app.Use(async(cont,next) => { await cont.Response.WriteAsync("Path"); });
 
         }
 
