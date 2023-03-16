@@ -60,7 +60,8 @@ namespace Platform
 
             //Метод UseEndpoints с помощью делегатов
             RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("Routed"); };
-            Action<IEndpointRouteBuilder> action = delegate(IEndpointRouteBuilder endpoint) { endpoint.MapGet("route",request); };
+            RequestDelegate request2 = delegate (HttpContext context) { return context.Response.WriteAsync("mehtod return"); };
+            Action<IEndpointRouteBuilder> action = delegate(IEndpointRouteBuilder endpoint) { endpoint.MapGet("route",request2); };
             app.UseEndpoints(action);
 
 
@@ -72,18 +73,49 @@ namespace Platform
             //обычным промежуточным программным обеспечением. Поэтому конечные точки — это асинхронные методы,
             //которые получают объект HttpContext и используют его для создания ответа.
 
-
-
+           
+           
 
             RequestDelegate requestDelegate = async delegate (HttpContext http) { await http.Response.WriteAsync("Midelwaire"); };
-
+            RequestDelegate requestDelegate2 = async delegate (HttpContext context) {  context.Response.StatusCode = StatusCodes.Status414UriTooLong; };
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapGet("{first}/{second}/{third}",async cont => {
+                    await cont.Response.WriteAsync("Request Was Routed\n");
+
+                    //IEnumerator<KeyValuePair<string,object>> people_struct2 = cont.Request.RouteValues.GetEnumerator();
+                    //while (people_struct2.MoveNext())
+                    //{
+                    //    await cont.Response.WriteAsync($"{people_struct2.Current.Value}\t {people_struct2.Current.Key}\n"); 
+                    //}
+                    //people_struct2.Reset();
+
+                   
+
+                    if (cont.Request.RouteValues["d"] is string)
+                    {
+
+                    }
+
+                    foreach (KeyValuePair<string, object> item in cont.Request.RouteValues)
+                    {
+                        await cont.Response.WriteAsync($"{item.Key}\t, {item.Value}\n");
+                    }
+                });
+
                 endpoints.MapGet("middleware",new QueryStringMiddleWare(requestDelegate).Invoke2);
                 endpoints.MapGet("routing", async context => await context.Response.WriteAsync("Request Was Routed"));
-                endpoints.MapGet("population/london",requestDelegate);
-                endpoints.MapGet("population/paris", new Population().Invoke);
-                endpoints.MapGet("capital/uk", new Capital().Invoke);
+                //endpoints.MapGet("population/london", requestDelegate);
+                //endpoints.MapGet("population/paris", new Population().Invoke);
+                //endpoints.MapGet("capital/uk", new Capital().Invoke);
+
+
+                endpoints.MapGet("capital/{country}",new CapitalStatic().Endpoint);
+                endpoints.MapGet("population/{city}",PopulationStatic.Endpointe);
+
+                endpoints.MapGet("{key}", new City().Endpoints);
+
+
             });
 
             
