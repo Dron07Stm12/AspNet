@@ -6,14 +6,14 @@ using Microsoft.AspNetCore.Routing;
 
 namespace Platform.Platform
 {
-    public static class PopulationStatic
+    public  class PopulationStatic
     {
         public static async Task Endpointe(HttpContext context) 
         {
-         string str = context.Request.RouteValues["city"] as string;
+         string city = context.Request.RouteValues["city"] as string;
             int? pop = null;
 
-            switch ((str ?? "").ToLower())
+            switch ((city ?? "").ToLower())
             {
                 case "london":
                     pop = 8000;
@@ -31,7 +31,7 @@ namespace Platform.Platform
 
             if (pop.HasValue)
             {
-                await context.Response.WriteAsync($"City: {str}, pop: {pop}");
+                await context.Response.WriteAsync($"City: {city}, pop: {pop}");
             }
             else {  context.Response.StatusCode = StatusCodes.Status404NotFound; }
 

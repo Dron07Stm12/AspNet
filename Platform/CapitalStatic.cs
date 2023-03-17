@@ -7,7 +7,7 @@ namespace Platform.Platform
 {
     public  class CapitalStatic
     {
-        public  async Task Endpoint(HttpContext context) 
+        public   async Task Endpoint(HttpContext context) 
         {
             string capital = null;
             // использование данные маршрута, чтобы получить значение переменной сегмента с именем страна через
@@ -46,7 +46,7 @@ namespace Platform.Platform
                     capital = "Paris";
                     break;
                 case "monaco":
-                    context.Response.Redirect($"population/{country}");
+                    context.Response.Redirect($"/population/{country}");
                     return;
 
             }
@@ -57,7 +57,7 @@ namespace Platform.Platform
             }
             else
             {
-                 context.Response.StatusCode = StatusCodes.Status414UriTooLong;   
+                 context.Response.StatusCode = StatusCodes.Status410Gone;   
             }
 
         }

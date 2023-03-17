@@ -49,6 +49,7 @@ namespace Platform
             //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
             //app.UseMiddleware<QueryStringMiddleWare>();
 
+            //работа ПО 
             //app.UseMiddleware<Population>();
             //app.UseMiddleware<Capital>();
 
@@ -80,47 +81,28 @@ namespace Platform
             RequestDelegate requestDelegate2 = async delegate (HttpContext context) {  context.Response.StatusCode = StatusCodes.Status414UriTooLong; };
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGet("{first}/{second}/{third}",async cont => {
-                    await cont.Response.WriteAsync("Request Was Routed\n");
 
-                    //IEnumerator<KeyValuePair<string,object>> people_struct2 = cont.Request.RouteValues.GetEnumerator();
-                    //while (people_struct2.MoveNext())
-                    //{
-                    //    await cont.Response.WriteAsync($"{people_struct2.Current.Value}\t {people_struct2.Current.Key}\n"); 
-                    //}
-                    //people_struct2.Reset();
+                //    //endpoints.MapGet("middleware", new QueryStringMiddleWare(requestDelegate).Invoke2);
+                //    //endpoints.MapGet("routing", async context => await context.Response.WriteAsync("Request Was Routed"));
+                //    //endpoints.MapGet("population/london", requestDelegate);
 
-                   
-
-                    if (cont.Request.RouteValues["d"] is string)
-                    {
-
-                    }
-
-                    foreach (KeyValuePair<string, object> item in cont.Request.RouteValues)
-                    {
-                        await cont.Response.WriteAsync($"{item.Key}\t, {item.Value}\n");
-                    }
-                });
-
-                endpoints.MapGet("middleware",new QueryStringMiddleWare(requestDelegate).Invoke2);
-                endpoints.MapGet("routing", async context => await context.Response.WriteAsync("Request Was Routed"));
-                //endpoints.MapGet("population/london", requestDelegate);
+                //    //Для маршрутизации - необходимо сопоставление  шаблона url пути("population/paris" или "capital/paris")
+                //    // и конечной точки в виде обьекта класса(new Population().Invoke или new Capital().Invoke),
                 //endpoints.MapGet("population/paris", new Population().Invoke);
                 //endpoints.MapGet("capital/uk", new Capital().Invoke);
 
+                //работа конечных точек с переменными шаблона маршрута url
+                endpoints.MapGet("population/{city}", PopulationStatic.Endpointe);
+                //endpoints.MapGet("capital/{coutry}", CapitalStatic2.Endpointe);
+                endpoints.MapGet("capital/{country}", new CapitalStatic().Endpoint);
 
-                endpoints.MapGet("capital/{country}",new CapitalStatic().Endpoint);
-                endpoints.MapGet("population/{city}",PopulationStatic.Endpointe);
-
-                endpoints.MapGet("{key}", new City().Endpoints);
-
+                //    //endpoints.MapGet("{key}", new City().Endpoints);
 
             });
 
-            
 
-            app.Use(async(cont,next) => { await cont.Response.WriteAsync("Path"); });
+
+            app.Use(async (cont, next) => { await cont.Response.WriteAsync("Path"); });
 
         }
 
@@ -622,3 +604,24 @@ namespace Platform
 //RequestDelegate request = null;
 //app.Map("/v", v => v.Run(new LocationMiddleware(request, msgOptions).Invoke2));
 
+//работа с переменными в маршрутах
+//endpoints.MapGet("{first}/{second}/{third}",async cont => {
+//    await cont.Response.WriteAsync("Request Was Routed\n");
+
+//    //IEnumerator<KeyValuePair<string,object>> people_struct2 = cont.Request.RouteValues.GetEnumerator();
+//    //while (people_struct2.MoveNext())
+//    //{
+//    //    await cont.Response.WriteAsync($"{people_struct2.Current.Value}\t {people_struct2.Current.Key}\n"); 
+//    //}
+//    //people_struct2.Reset();
+
+//    if (cont.Request.RouteValues["d"] is string)
+//    {
+
+//    }
+
+//    foreach (KeyValuePair<string, object> item in cont.Request.RouteValues)
+//    {
+//        await cont.Response.WriteAsync($"{item.Key}\t, {item.Value}\n");
+//    }
+//});
