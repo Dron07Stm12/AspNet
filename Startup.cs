@@ -17,6 +17,7 @@ using Platform.Platform;
 using Microsoft.AspNetCore.Builder.Extensions;
 using Platform;
 using Microsoft.AspNetCore.Routing;
+using System.Security.Policy;
 
 namespace Platform
 {
@@ -78,7 +79,7 @@ namespace Platform
            
 
             RequestDelegate requestDelegate = async delegate (HttpContext http) { await http.Response.WriteAsync("Midelwaire"); };
-            RequestDelegate requestDelegate2 = async delegate (HttpContext context) {  context.Response.StatusCode = StatusCodes.Status414UriTooLong; };
+            RequestDelegate requestDelegate2 = async delegate (HttpContext context) {   context.Response.StatusCode = StatusCodes.Status414UriTooLong; };
             app.UseEndpoints(endpoints =>
             {
 
@@ -86,17 +87,26 @@ namespace Platform
                 //    //endpoints.MapGet("routing", async context => await context.Response.WriteAsync("Request Was Routed"));
                 //    //endpoints.MapGet("population/london", requestDelegate);
 
-                //    //Для маршрутизации - необходимо сопоставление  шаблона url пути("population/paris" или "capital/paris")
-                //    // и конечной точки в виде обьекта класса(new Population().Invoke или new Capital().Invoke),
+                //Для маршрутизации - необходимо сопоставление  шаблона url пути("population/paris" или "capital/paris")
+                // и конечной точки в виде обьекта класса(new Population().Invoke или new Capital().Invoke),
                 //endpoints.MapGet("population/paris", new Population().Invoke);
                 //endpoints.MapGet("capital/uk", new Capital().Invoke);
 
-                //работа конечных точек с переменными шаблона маршрута url
-                endpoints.MapGet("population/{city}", PopulationStatic.Endpointe);
+                //работа конечных точек(ввиде статических классов) с переменными({city и {coutry}) шаблона маршрута url
+                //endpoints.MapGet("population/{city}", PopulationStatic.Endpointe);
                 //endpoints.MapGet("capital/{coutry}", CapitalStatic2.Endpointe);
-                endpoints.MapGet("capital/{country}", new CapitalStatic().Endpoint);
+                //или как с обьектом класса
+                //endpoints.MapGet("capital/{country}", new CapitalStatic().Endpoint);
+                //endpoints.MapGet("{key}", new City().Endpoints);
 
-                //    //endpoints.MapGet("{key}", new City().Endpoints);
+               
+                endpoints.MapGet("capital/{coutry}", CapitalStatic2.Endpointe);
+                //Единственные метаданные для создания URL - адресов требуется имя, которое назначается путем
+                //передачи нового объекта RouteNameMetadata, аргумент конструктора которого указывает имя, которое будет
+                //использоваться для ссылки на маршрут
+                endpoints.MapGet("population/{city}", PopulationStatic.Endpointe).WithMetadata(new RouteNameMetadata("population"));
+                
+
 
             });
 

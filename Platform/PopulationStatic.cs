@@ -26,6 +26,9 @@ namespace Platform.Platform
                 case "monaco":
                     pop = 500;  
                     break;
+                case "shtat":
+                    pop = 600;  
+                    break;  
 
             }
 
