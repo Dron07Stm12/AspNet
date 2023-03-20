@@ -76,45 +76,28 @@ namespace Platform
             //обычным промежуточным программным обеспечением. Поэтому конечные точки — это асинхронные методы,
             //которые получают объект HttpContext и используют его для создания ответа.
 
-           
-           
 
-           
 
-            RequestDelegate requestDelegate3 = async delegate (HttpContext http) {
-                foreach (KeyValuePair<string,object> item in http.Request.RouteValues)
+
+            RequestDelegate request3 = async delegate (HttpContext context) {
+
+                foreach (KeyValuePair<string,object> item in context.Request.RouteValues)
                 {
-                    await http.Response.WriteAsync($" {item.Key}:\t {item.Value}\n");
+                    await context.Response.WriteAsync($"{item.Key}\t{item.Value}\n");
                 }
-              
+            
             };
+
             app.UseEndpoints(endpoints =>
-            {
-
-
-               
+            {             
                 endpoints.MapGet("capital/{coutry=uk}", CapitalStatic2.Endpointe);
                 //Единственные метаданные для создания URL - адресов требуется имя, которое назначается путем
                 //передачи нового объекта RouteNameMetadata, аргумент конструктора которого указывает имя, которое будет
                 //использоваться для ссылки на маршрут
                 endpoints.MapGet("size/{city?}", PopulationStatic.Endpointe).WithMetadata(new RouteNameMetadata("population"));
 
-                endpoints.MapGet("files/{filename}.{ext}",async(cont) =>
-                {
-                    await cont.Response.WriteAsync("Request Was Routed\n");
+                endpoints.MapGet("{one}/{two}/{*thee}",request3);
 
-                    foreach (var item in cont.Request.RouteValues)
-                    {
-                        await cont.Response.WriteAsync($"{item.Key}: {item.Value}\n");
-                    }
-                });
-
-
-                endpoints.MapGet("{one}/{two}/{three}.{d}",requestDelegate3);
-
-
-
-                endpoints.MapGet("f/{name}.{exe}",requestDelegate3);
 
             });
 
@@ -664,3 +647,33 @@ namespace Platform
 //или как с обьектом класса
 //endpoints.MapGet("capital/{country}", new CapitalStatic().Endpoint);
 //endpoints.MapGet("{key}", new City().Endpoints);
+
+
+
+
+//Сопоставление нескольких значений из одного сегмента URL
+
+//endpoints.MapGet("files/{filename}.{ext}",async(cont) =>
+//{
+//    await cont.Response.WriteAsync("Request Was Routed\n");
+
+//    foreach (var item in cont.Request.RouteValues)
+//    {
+//        await cont.Response.WriteAsync($"{item.Key}: {item.Value}\n");
+//    }
+//});
+
+
+
+//RequestDelegate requestDelegate3 = async delegate (HttpContext http) {
+//    foreach (KeyValuePair<string,object> item in http.Request.RouteValues)
+//    {
+//        await http.Response.WriteAsync($" {item.Key}:\t {item.Value}\n");
+//    }
+
+//};
+//endpoints.MapGet("{one}/{two}/{three}.{d}",requestDelegate3);
+
+
+
+//endpoints.MapGet("f/{name}.{exe}",requestDelegate3);
