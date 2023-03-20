@@ -81,6 +81,7 @@ namespace Platform
 
             RequestDelegate request3 = async delegate (HttpContext context) {
 
+
                 foreach (KeyValuePair<string,object> item in context.Request.RouteValues)
                 {
                     await context.Response.WriteAsync($"{item.Key}\t{item.Value}\n");
