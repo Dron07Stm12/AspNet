@@ -97,7 +97,7 @@ namespace Platform
                 //Единственные метаданные для создания URL - адресов требуется имя, которое назначается путем
                 //передачи нового объекта RouteNameMetadata, аргумент конструктора которого указывает имя, которое будет
                 //использоваться для ссылки на маршрут
-                endpoints.MapGet("size/{city}", PopulationStatic.Endpointe).WithMetadata(new RouteNameMetadata("population"));
+                endpoints.MapGet("size/{city?}", PopulationStatic.Endpointe).WithMetadata(new RouteNameMetadata("population"));
 
                 endpoints.MapGet("files/{filename}.{ext}",async(cont) =>
                 {
