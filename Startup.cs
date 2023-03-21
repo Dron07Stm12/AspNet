@@ -19,6 +19,8 @@ using Platform;
 using Microsoft.AspNetCore.Routing;
 using System.Security.Policy;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.Extensions.Primitives;
+using System.Net;
 
 namespace Platform
 {
@@ -78,16 +80,7 @@ namespace Platform
 
 
 
-
-            RequestDelegate request3 = async delegate (HttpContext context) {
-
-
-                foreach (KeyValuePair<string,object> item in context.Request.RouteValues)
-                {
-                    await context.Response.WriteAsync($"{item.Key}\t{item.Value}\n");
-                }
-            
-            };
+           
 
             app.UseEndpoints(endpoints =>
             {             
@@ -97,14 +90,21 @@ namespace Platform
                 //использоваться для ссылки на маршрут
                 endpoints.MapGet("size/{city?}", PopulationStatic.Endpointe).WithMetadata(new RouteNameMetadata("population"));
 
-                endpoints.MapGet("{one}/{two}/{*thee}",request3);
+               endpoints.MapGet("{one:int}/{two:bool}", async(cont) => {
+                   foreach (KeyValuePair<string,object> item in cont.Request.RouteValues)
+                   {
+                       await cont.Response.WriteAsync($"{item.Key}\t{item.Value}\n");
+                   }
+                   
+               });
 
+               
 
             });
 
 
-
-            app.Use(async (cont, next) => { await cont.Response.WriteAsync("Path"); });
+           
+            app.Use(async (cont, next) => { await cont.Response.WriteAsync("\nPath2"); });
 
         }
 
@@ -678,3 +678,28 @@ namespace Platform
 
 
 //endpoints.MapGet("f/{name}.{exe}",requestDelegate3);
+
+
+
+
+//Работа с уневерсальной переменной(сегментом)
+//StringValues strings = new StringValues("password3");
+////strings = "password2";
+
+//RequestDelegate request3 = async delegate (HttpContext context) {
+
+//    //string s = context.Request.Query["password"];
+//    string s2 = context.Request.Query[strings];
+//    if (context.Request.Method == HttpMethods.Get && s2 == "dron")
+//    {
+
+//        await context.Response.WriteAsync("Query_dron\n");
+
+//        foreach (KeyValuePair<string, object> item in context.Request.RouteValues)
+//        {
+//            await context.Response.WriteAsync($"{item.Key}\t{item.Value}\n");
+//        }
+
+//    }          
+//};
+//endpoints.MapGet("{one}/{two}/{*thee}", request3);
