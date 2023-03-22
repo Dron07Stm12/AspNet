@@ -96,7 +96,7 @@ namespace Platform
                    
                 });
 
-                endpoints.MapFallback(request);
+                endpoints.MapFallback(request);//
 
 
 
