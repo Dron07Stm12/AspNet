@@ -84,27 +84,42 @@ namespace Platform
 
             app.UseEndpoints(endpoints =>
             {             
-                endpoints.MapGet("capital/{coutry=uk}", CapitalStatic2.Endpointe);
-                //Единственные метаданные для создания URL - адресов требуется имя, которое назначается путем
-                //передачи нового объекта RouteNameMetadata, аргумент конструктора которого указывает имя, которое будет
-                //использоваться для ссылки на маршрут
+                endpoints.MapGet("capital/{coutry:regex(^uk|monaco$|shtat$)}", CapitalStatic2.Endpointe);
+               
                 endpoints.MapGet("size/{city?}", PopulationStatic.Endpointe).WithMetadata(new RouteNameMetadata("population"));
 
-               endpoints.MapGet("{one:int}/{two:bool}", async(cont) => {
+                endpoints.MapGet("{one:alpha:length(4)}/{two:bool}", async(cont) => {
                    foreach (KeyValuePair<string,object> item in cont.Request.RouteValues)
                    {
                        await cont.Response.WriteAsync($"{item.Key}\t{item.Value}\n");
                    }
                    
-               });
+                });
 
-               
+                endpoints.MapFallback(request);
+
+
 
             });
 
 
            
-            app.Use(async (cont, next) => { await cont.Response.WriteAsync("\nPath2"); });
+            //app.Use(async (cont, next) => { await cont.Response.WriteAsync("\nPath2"); });
+
+            Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
+            {
+                if (context.Request.Method == HttpMethods.Get && context.Request.Query["myRequest"] == "true")
+                {
+                    await context.Response.WriteAsync("myRequest\n");
+                }
+                await task();
+            };
+
+            app.Use(func);
+
+
+
+
 
         }
 
