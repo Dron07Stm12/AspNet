@@ -21,6 +21,7 @@ using System.Security.Policy;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.Primitives;
 using System.Net;
+using Microsoft.Extensions.Configuration;
 
 namespace Platform
 {
@@ -34,11 +35,18 @@ namespace Platform
         public void ConfigureServices(IServiceCollection services)
         {
             //Настройка промежуточного программного обеспечения - общий шаблон
+            //через лямбду
             //services.Configure<MessageOptions>(options => { options.CityName = "Albany"; });
-
+            // или через делегат
             Action<MessageOptions> action = delegate (MessageOptions messageOptions) { messageOptions.CityName = "Japan"; };
             services.Configure<MessageOptions>(action);
             //services.Configure(action);
+
+            Type type = typeof(CountryRouteConstraint); 
+            Action<RouteOptions> action1 = delegate (RouteOptions routeOptions) { routeOptions.ConstraintMap.Add("countryName",type);};
+            services.Configure<RouteOptions>(action1);
+            //или через лямбду
+            //services.Configure<RouteOptions>(opts => opts.ConstraintMap.Add("countryName", typeof(CountryRouteConstraint)));
 
         }
 
@@ -84,7 +92,7 @@ namespace Platform
 
             app.UseEndpoints(endpoints =>
             {             
-                endpoints.MapGet("capital/{coutry:regex(^uk|monaco$|shtat$)}", CapitalStatic2.Endpointe);
+                //endpoints.MapGet("capital/{coutry:regex(^uk|monaco$|shtat$)}", CapitalStatic2.Endpointe);
                
                 endpoints.MapGet("size/{city?}", PopulationStatic.Endpointe).WithMetadata(new RouteNameMetadata("population"));
 
@@ -96,9 +104,10 @@ namespace Platform
                    
                 });
 
+
+                endpoints.MapGet("capital/{coutry:countryName}",CapitalStatic2.Endpointe);
                 endpoints.MapFallback(request);//
-
-
+               
 
             });
 

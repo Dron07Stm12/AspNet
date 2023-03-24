@@ -57,7 +57,7 @@ namespace Platform.Platform
             }
             else
             {
-                 context.Response.StatusCode = StatusCodes.Status410Gone;   
+                 context.Response.StatusCode = StatusCodes.Status200OK;   
             }
 
         }
