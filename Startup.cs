@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.Extensions.Primitives;
 using System.Net;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Routing.Patterns;
 
 namespace Platform
 {
@@ -74,8 +75,8 @@ namespace Platform
             //Метод UseEndpoints с помощью делегатов
             RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("Routed"); };
             RequestDelegate request2 = delegate (HttpContext context) { return context.Response.WriteAsync("mehtod return"); };
-            Action<IEndpointRouteBuilder> action = delegate(IEndpointRouteBuilder endpoint) { endpoint.MapGet("route",request2); };
-            app.UseEndpoints(action);
+            //Action<IEndpointRouteBuilder> action = delegate(IEndpointRouteBuilder endpoint) { endpoint.MapGet("route",request2); };
+            //app.UseEndpoints(action);
 
 
 
@@ -86,49 +87,40 @@ namespace Platform
             //обычным промежуточным программным обеспечением. Поэтому конечные точки — это асинхронные методы,
             //которые получают объект HttpContext и используют его для создания ответа.
 
+            //в качестве параметров принимает контекст запроса - объект HttpContext и делегат Func<Task>,
+            //который представляет собой ссылку на следующий в конвейере компонент middleware.
 
-
-           
-
-            app.UseEndpoints(endpoints =>
-            {             
-                //endpoints.MapGet("capital/{coutry:regex(^uk|monaco$|shtat$)}", CapitalStatic2.Endpointe);
-               
-                endpoints.MapGet("size/{city?}", PopulationStatic.Endpointe).WithMetadata(new RouteNameMetadata("population"));
-
-                endpoints.MapGet("{one:alpha:length(4)}/{two:bool}", async(cont) => {
-                   foreach (KeyValuePair<string,object> item in cont.Request.RouteValues)
-                   {
-                       await cont.Response.WriteAsync($"{item.Key}\t{item.Value}\n");
-                   }
-                   
-                });
-
-
-                endpoints.MapGet("capital/{coutry:countryName}",CapitalStatic2.Endpointe);
-                endpoints.MapFallback(request);//
-               
-
-            });
-
-
-           
-            //app.Use(async (cont, next) => { await cont.Response.WriteAsync("\nPath2"); });
-
+            //( Func<Task> task)Инкапсулирует метод, который не имеет параметра и возвращает значение типа, указанного в параметре Task.
+            //public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
+            //out TResult - Возвращаемое значение метода, который инкапсулирует этот делегат.
             Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
             {
-                if (context.Request.Method == HttpMethods.Get && context.Request.Query["myRequest"] == "true")
+                Endpoint end = context.GetEndpoint();
+               
+                if (end != null)
                 {
-                    await context.Response.WriteAsync("myRequest\n");
+                    await context.Response.WriteAsync($"{end.DisplayName} Selected\n");
                 }
-                await task();
+                else { await context.Response.WriteAsync("No Endpoint Selected \n"); }                      
+                await task.Invoke();              
             };
-
             app.Use(func);
 
 
+            app.UseEndpoints(endpoints =>
+            {
+                
+                //или через лямбду
+                endpoints.Map("{number:int}", request2).WithDisplayName("Int Endpoint").Add(b => ((RouteEndpointBuilder)b).Order = 1);
+                //endpoints.MapFallback(request);
+                //Нисходящие преобразования. Downcasting, чтобы обратится функционалу(к свойству Order) производного класса(RouteEndpointBuilder)
+                Action<EndpointBuilder> action1 = delegate (EndpointBuilder route) { ((RouteEndpointBuilder)route).Order = 2; };
+                endpoints.Map("{number:double}", request).WithDisplayName("double Endpoint").Add(action1);
 
 
+            });
+
+            //app.Use(async (cont, next) => { await cont.Response.WriteAsync("\nPath2"); });
 
         }
 
@@ -727,3 +719,20 @@ namespace Platform
 //    }          
 //};
 //endpoints.MapGet("{one}/{two}/{*thee}", request3);
+
+
+
+//использование ограничений  и переменных
+//endpoints.MapGet("capital/{coutry:regex(^uk|monaco$|shtat$)}", CapitalStatic2.Endpointe);
+//endpoints.MapGet("size/{city?}", PopulationStatic.Endpointe).WithMetadata(new RouteNameMetadata("population"));
+
+//endpoints.MapGet("{one:alpha:length(4)}/{two:bool}", async (cont) => {
+//    foreach (KeyValuePair<string, object> item in cont.Request.RouteValues)
+//    {
+//        await cont.Response.WriteAsync($"{item.Key}\t{item.Value}\n");
+//    }
+
+//});
+
+
+//endpoints.MapGet("capital/{coutry:countryName}", CapitalStatic2.Endpointe);
