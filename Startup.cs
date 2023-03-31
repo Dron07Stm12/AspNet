@@ -23,6 +23,8 @@ using Microsoft.Extensions.Primitives;
 using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Routing.Patterns;
+using Platform.Services;
+using System.Threading;
 
 namespace Platform
 {
@@ -35,92 +37,61 @@ namespace Platform
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            //Настройка промежуточного программного обеспечения - общий шаблон
-            //через лямбду
-            //services.Configure<MessageOptions>(options => { options.CityName = "Albany"; });
-            // или через делегат
-            Action<MessageOptions> action = delegate (MessageOptions messageOptions) { messageOptions.CityName = "Japan"; };
-            services.Configure<MessageOptions>(action);
-            //services.Configure(action);
-
-            Type type = typeof(CountryRouteConstraint); 
-            Action<RouteOptions> action1 = delegate (RouteOptions routeOptions) { routeOptions.ConstraintMap.Add("countryName",type);};
-            services.Configure<RouteOptions>(action1);
-            //или через лямбду
-            //services.Configure<RouteOptions>(opts => opts.ConstraintMap.Add("countryName", typeof(CountryRouteConstraint)));
+           
 
         }
 
         // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IOptions<MessageOptions> msgOptions)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
-            //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
-            //app.UseMiddleware<QueryStringMiddleWare>();
-
-            //работа ПО 
-            //app.UseMiddleware<Population>();
-            //app.UseMiddleware<Capital>();
-
-
-
-
-            //Добавление ПО в конвеер запросов 
+            app.UseDeveloperExceptionPage();
             app.UseRouting();
-
-            //Метод UseEndpoints с помощью делегатов
-            RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("Routed"); };
-            RequestDelegate request2 = delegate (HttpContext context) { return context.Response.WriteAsync("mehtod return"); };
-            //Action<IEndpointRouteBuilder> action = delegate(IEndpointRouteBuilder endpoint) { endpoint.MapGet("route",request2); };
-            //app.UseEndpoints(action);
+            app.UseMiddleware<WeatherMiddleware>();
 
 
+            IResponseFormatter formatter = new TextResponseFormatter();
 
-            //Метод UseEndpoints используется для определения маршрутов, которые сопоставляют URL-адреса с конечными точками
-            //URL-адреса сопоставляются с использованием шаблонов("routing"), которые сравниваются с путем URL-адресов запроса,
-            //и каждый маршрут создает отношение между одним шаблоном URL и одной конечной точкой
-            //Конечные точки определяются с помощью RequestDelegate, который является тем же делегатом, который используется
-            //обычным промежуточным программным обеспечением. Поэтому конечные точки — это асинхронные методы,
-            //которые получают объект HttpContext и используют его для создания ответа.
-
-            //в качестве параметров принимает контекст запроса - объект HttpContext и делегат Func<Task>,
-            //который представляет собой ссылку на следующий в конвейере компонент middleware.
-
-            //( Func<Task> task)Инкапсулирует метод, который не имеет параметра и возвращает значение типа, указанного в параметре Task.
-            //public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
-            //out TResult - Возвращаемое значение метода, который инкапсулирует этот делегат.
-            Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
+            TextResponseFormatter text = new TextResponseFormatter();
+            Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> task)
             {
-                Endpoint end = context.GetEndpoint();
-               
-                if (end != null)
+                if (http.Request.Path == "/middleware/functions2")
                 {
-                    await context.Response.WriteAsync($"{end.DisplayName} Selected\n");
+                    await text.Format(http, "Middleware Function: It is snowing in Chicago");
                 }
-                else { await context.Response.WriteAsync("No Endpoint Selected \n"); }                      
-                await task.Invoke();              
+                else { await task.Invoke(); }
+
             };
             app.Use(func);
 
 
-            app.UseEndpoints(endpoints =>
-            {
-                
-                //или через лямбду
-                endpoints.Map("{number:int}", request2).WithDisplayName("Int Endpoint").Add(b => ((RouteEndpointBuilder)b).Order = 1);
-                //endpoints.MapFallback(request);
-                //Нисходящие преобразования. Downcasting, чтобы обратится функционалу(к свойству Order) производного класса(RouteEndpointBuilder)
-                Action<EndpointBuilder> action1 = delegate (EndpointBuilder route) { ((RouteEndpointBuilder)route).Order = 2; };
-                endpoints.Map("{number:double}", request).WithDisplayName("double Endpoint").Add(action1);
 
+
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path == "/middleware/function")
+                {
+                    //Функция промежуточного программного обеспечения
+                    //await formatter.Format(context, "Middleware Function: It is snowing in Chicago");
+                    //Служба TextResponseFormatter получает общий объект через статическое свойство Singleton
+                    await TextResponseFormatter.Singleton.Format(context, "Middleware static Function");
+                    //await TextResponseFormatter.Format_Static(context, "Middleware static Function");
+                   
+                }
+
+                else { await next.Invoke(); }
 
             });
 
-            //app.Use(async (cont, next) => { await cont.Response.WriteAsync("\nPath2"); });
+            app.UseEndpoints(endpoints => 
+            {
+
+                   endpoints.MapGet("/endpoint/class", WeatherEndpoint.Endpoint);
+                   endpoints.MapGet("/endpoint/function", async context =>
+                   { 
+                       await context.Response.WriteAsync("Endpoint Function: It is sunny in LA");
+                   });
+            });
+
 
         }
 
@@ -129,7 +100,29 @@ namespace Platform
 }
 
 
+//Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> task) 
+//{
+//    if (http.Request.Path == "/middleware/functions")
+//    {
+//        await formatter.Format(http, "Middleware Function: It is snowing in Chicago");
+//    }
+//    else { await task.Invoke(); }
 
+//};
+//app.Use(func);
+
+//RequestDelegate request = async delegate (HttpContext context) { await context.Response.WriteAsync("Endpoint Function: It is sunny in LA"); };
+//Action<IEndpointRouteBuilder> action = delegate(IEndpointRouteBuilder endpoint) {
+
+//    endpoint.MapGet("/endpoint/class",WeatherEndpoint.Invoke);
+
+//    endpoint.MapGet("/endpoint/function",request);
+
+
+//};    
+
+
+//app.UseEndpoints(action);
 
 
 
@@ -736,3 +729,101 @@ namespace Platform
 
 
 //endpoints.MapGet("capital/{coutry:countryName}", CapitalStatic2.Endpointe);
+
+
+///////////////////// класс Startap  до изучения внедрения зависимостей
+//public class Startup
+//{
+
+//    // This method gets called by the runtime. Use this method to add services to the container.
+//    // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+//    public void ConfigureServices(IServiceCollection services)
+//    {
+//        //Настройка промежуточного программного обеспечения - общий шаблон
+//        //через лямбду
+//        services.Configure<MessageOptions>(options => { options.CityName = "Albany"; });
+//        // или через делегат
+//        //Action<MessageOptions> action = delegate (MessageOptions messageOptions) { messageOptions.CityName = "Japan"; };
+//        //services.Configure<MessageOptions>(action);
+//        //services.Configure(action);
+
+//        Type type = typeof(CountryRouteConstraint);
+//        Action<RouteOptions> action1 = delegate (RouteOptions routeOptions) { routeOptions.ConstraintMap.Add("countryName", type); };
+//        services.Configure<RouteOptions>(action1);
+//        //или через лямбду
+//        //services.Configure<RouteOptions>(opts => opts.ConstraintMap.Add("countryName", typeof(CountryRouteConstraint)));
+
+//    }
+
+//    // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
+//    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IOptions<MessageOptions> msgOptions)
+//    {
+//        if (env.IsDevelopment())
+//        {
+//            app.UseDeveloperExceptionPage();
+//        }
+
+//        //метод UseMiddleware регистрирует и выполняет класс где находится  компонент ПО промежуточного слоя
+//        //app.UseMiddleware<QueryStringMiddleWare>();
+
+//        //работа ПО 
+//        //app.UseMiddleware<Population>();
+//        //app.UseMiddleware<Capital>();
+
+
+
+
+//        //Добавление ПО в конвеер запросов 
+//        app.UseRouting();
+
+//        //Метод UseEndpoints с помощью делегатов
+//        RequestDelegate request = async delegate (HttpContext http) { await http.Response.WriteAsync("Routed"); };
+//        RequestDelegate request2 = delegate (HttpContext context) { return context.Response.WriteAsync("mehtod return"); };
+//        //Action<IEndpointRouteBuilder> action = delegate(IEndpointRouteBuilder endpoint) { endpoint.MapGet("route",request2); };
+//        //app.UseEndpoints(action);
+
+
+
+//        //Метод UseEndpoints используется для определения маршрутов, которые сопоставляют URL-адреса с конечными точками
+//        //URL-адреса сопоставляются с использованием шаблонов("routing"), которые сравниваются с путем URL-адресов запроса,
+//        //и каждый маршрут создает отношение между одним шаблоном URL и одной конечной точкой
+//        //Конечные точки определяются с помощью RequestDelegate, который является тем же делегатом, который используется
+//        //обычным промежуточным программным обеспечением. Поэтому конечные точки — это асинхронные методы,
+//        //которые получают объект HttpContext и используют его для создания ответа.
+
+//        //в качестве параметров принимает контекст запроса - объект HttpContext и делегат Func<Task>,
+//        //который представляет собой ссылку на следующий в конвейере компонент middleware.
+
+//        //( Func<Task> task)Инкапсулирует метод, который не имеет параметра и возвращает значение типа, указанного в параметре Task.
+//        //public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
+//        //out TResult - Возвращаемое значение метода, который инкапсулирует этот делегат.
+//        Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
+//        {
+//            Endpoint end = context.GetEndpoint();
+
+//            if (end != null)
+//            {
+//                await context.Response.WriteAsync($"{end.DisplayName} Selected\n");
+//            }
+//            else { await context.Response.WriteAsync("No Endpoint Selected \n"); }
+//            await task.Invoke();
+//        };
+//        app.Use(func);
+
+
+//        app.UseEndpoints(endpoints =>
+//        {
+
+//            //или через лямбду
+//            endpoints.Map("{number:int}", request2).WithDisplayName("Int Endpoint").Add(b => ((RouteEndpointBuilder)b).Order = 1);
+//            //endpoints.MapFallback(request);
+//            //Нисходящие преобразования. Downcasting, чтобы обратится функционалу(к свойству Order) производного класса(RouteEndpointBuilder)
+//            Action<EndpointBuilder> action1 = delegate (EndpointBuilder route) { ((RouteEndpointBuilder)route).Order = 2; };
+//            endpoints.Map("{number:double}", request).WithDisplayName("double Endpoint").Add(action1);
+
+
+//        });
+
+//        //app.Use(async (cont, next) => { await cont.Response.WriteAsync("\nPath2"); });
+
+//    }
