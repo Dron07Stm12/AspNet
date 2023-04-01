@@ -6,25 +6,20 @@ using System.Threading.Tasks;
 
 namespace Platform.Services
 {
+   
+
+
     public class TextResponseFormatter: IResponseFormatter
     {
         private int responseCounter;    
         public static TextResponseFormatter shared;
-
-        private static int responseCounter2;
+        //private static int responseCounter2;
 
         //Класс TextResponseFormatter реализует интерфейс и записывает содержимое
         //в ответ в виде простой строки с префикс, чтобы было очевидно, когда используется класс.
         public async Task Format(HttpContext context,string content)
         {
             await context.Response.WriteAsync($"Responce {++responseCounter}: \n{content}");
-        }
-
-
-        public static async Task Format_Static(HttpContext context,string content) {
-
-            await context.Response.WriteAsync($"Responce {--responseCounter2}: \n{context}");
-            
         }
 
         public static TextResponseFormatter Singleton {
@@ -46,5 +41,12 @@ namespace Platform.Services
         
         
         }
+
+        //public static async Task Format_Static(HttpContext context, string content)
+        //{
+
+        //    await context.Response.WriteAsync($"Responce {--responseCounter2}: \n{context}");
+
+        //}
     }
 }

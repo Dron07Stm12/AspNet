@@ -46,17 +46,35 @@ namespace Platform
         {
             app.UseDeveloperExceptionPage();
             app.UseRouting();
+
             app.UseMiddleware<WeatherMiddleware>();
 
-
+            //внедрение зависимостей
             IResponseFormatter formatter = new TextResponseFormatter();
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path == "/middleware/function")
+                {
+                    //Функция промежуточного программного обеспечения,через обьект
+                    await formatter.Format(context, "Middleware Function: It is snowing in Chicago\n");
+                    //Служба TextResponseFormatter получает общий объект через статическое свойство Singleton
+                    await TextResponseFormatter.Singleton.Format(context, "Middleware static Function\n");
+                   // await TextResponseFormatter.Format_Static(context, "Middleware static Function");
 
+                }
+
+                     else { await next.Invoke(); }
+
+            });
+
+            //через делегат
             TextResponseFormatter text = new TextResponseFormatter();
             Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> task)
             {
                 if (http.Request.Path == "/middleware/functions2")
                 {
-                    await text.Format(http, "Middleware Function: It is snowing in Chicago");
+                    await text.Format(http, "Func Middleware, new TextResponseFormatter()\n");
+                    await formatter.Format(http, "Func Middleware, interface IResponseFormatter\n");
                 }
                 else { await task.Invoke(); }
 
@@ -64,32 +82,15 @@ namespace Platform
             app.Use(func);
 
 
-
-
-            app.Use(async (context, next) =>
+            app.UseEndpoints(endpoints =>
             {
-                if (context.Request.Path == "/middleware/function")
+                endpoints.MapGet("/endpoint/class", WeatherEndpoint.Endpoint);
+
+                //endpoints.Map("/br", new WeatherMiddleware().Invoke2);
+                endpoints.MapGet("/endpoint/function", async context =>
                 {
-                    //Функция промежуточного программного обеспечения
-                    //await formatter.Format(context, "Middleware Function: It is snowing in Chicago");
-                    //Служба TextResponseFormatter получает общий объект через статическое свойство Singleton
-                    await TextResponseFormatter.Singleton.Format(context, "Middleware static Function");
-                    //await TextResponseFormatter.Format_Static(context, "Middleware static Function");
-                   
-                }
-
-                else { await next.Invoke(); }
-
-            });
-
-            app.UseEndpoints(endpoints => 
-            {
-
-                   endpoints.MapGet("/endpoint/class", WeatherEndpoint.Endpoint);
-                   endpoints.MapGet("/endpoint/function", async context =>
-                   { 
-                       await context.Response.WriteAsync("Endpoint Function: It is sunny in LA");
-                   });
+                    await context.Response.WriteAsync("Endpoint Function: It is sunny in LA");
+                });
             });
 
 
@@ -827,3 +828,41 @@ namespace Platform
 //        //app.Use(async (cont, next) => { await cont.Response.WriteAsync("\nPath2"); });
 
 //    }
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//Func<RequestDelegate, RequestDelegate> middleware = delegate (RequestDelegate request)
+//{
+//    //request = async delegate (HttpContext http) { await http.Response.WriteAsync("dron"); };
+//    //return request;
+//    return new WeatherMiddleware().Invoke2;
+
+//};
+
+//Func<HttpContext, Func<Task>, Task> func2 = async delegate (HttpContext http, Func<Task> task)
+//{
+//    //await task.Invoke();
+
+//    await task();
+//};
+
+
+//app.Map("/branch", delegate (IApplicationBuilder builder) {
+
+//    builder.Use(func2);
+
+//    builder.UseMiddleware<WeatherMiddleware>();
+//    builder.Use(middleware);
+//    //builder.Use(func2);
+//    //builder.Use(func2);
+//    //builder.UseMiddleware<WeatherMiddleware>();
+//    builder.Use(middleware);
+//    //builder.Use(func2);
+//    //builder.Run(new WeatherMiddleware().Invoke2);
+
+
+//});
+
