@@ -13,6 +13,7 @@ namespace Platform.Services
     {
         private int responseCounter;    
         public static TextResponseFormatter shared;
+       
         //private static int responseCounter2;
 
         //Класс TextResponseFormatter реализует интерфейс и записывает содержимое
@@ -20,6 +21,7 @@ namespace Platform.Services
         public async Task Format(HttpContext context,string content)
         {
             await context.Response.WriteAsync($"Responce {++responseCounter}: \n{content}");
+            //await request(context);
         }
 
         public static TextResponseFormatter Singleton {
