@@ -47,7 +47,7 @@ namespace Platform
             app.UseDeveloperExceptionPage();
             app.UseRouting();
 
-            app.UseMiddleware<WeatherMiddleware>();
+            //app.UseMiddleware<WeatherMiddleware>();
 
             //внедрение зависимостей
           
@@ -63,11 +63,33 @@ namespace Platform
 
             });
 
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path == "/middleware/function2")
+                {
+
+                    await WeatherMiddleware.Format(context,"middl");
+
+                }
+                else { await next.Invoke(); }
+
+            });
+
+
            
+
             app.UseEndpoints(endpoints =>
             {                            
-                endpoints.MapGet("/endpoint/function5",async delegate (HttpContext context) { await TypeBroker.Formatter.Format(context,"endpoint_broker"); });
-            
+                endpoints.MapGet("/endpoint/function",async delegate (HttpContext context) { await TypeBroker.Formatter.Format(context,"endpoint_broker"); });
+
+                //через класс TypeBroker в котором есть ссылки на интерфейс(IResponseFormatter) и которые(ссылки интерфейса) ссылаются на обьекты
+                //классов(new TextResponseFormatter(),new HtmlResponseFormatter()) - поэтому через ссылки на интерфейс(IResponseFormatter), которые(ссылки интерфейса)
+                //ссылаются на обьекты классов, обратимся к асинхронному  методу Format в котором  в том числе и  реализуем RequestDelegate делегат -  конечной точки
+                //метода UseEndpoint, а также string метода  Format
+                endpoints.MapGet("/endpoint/function_html", async delegate (HttpContext context) { await TypeBroker.Formatterhtml.Format(context, "endpoint_broker_html");});
+
+                endpoints.MapGet("/endpoint/function_middl",async delegate (HttpContext context) { await WeatherMiddleware.Format(context,"endpoint_midd_weath"); });
+               
             });
 
 
@@ -936,6 +958,31 @@ namespace Platform
 
 
 //}
+
+
+//работа через делегаты
+//Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext context, Func<Task> task)
+//{
+//    if (context.Request.Method == HttpMethods.Get && context.Request.Query["myRequest"] == "true")
+//    {
+//        await WeatherMiddleware.Format(context, "func");
+//    }
+//    await task();
+//};
+
+//Action<IApplicationBuilder> value = delegate (IApplicationBuilder builder)
+//{
+
+//    builder.Use(func);
+
+//};
+//app.Map("/branch", value);
+
+//app.Map("/br", delegate (IApplicationBuilder builder)
+//{
+
+//    builder.Use(func);
+//});
 
 
 
