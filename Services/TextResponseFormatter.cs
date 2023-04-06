@@ -24,6 +24,13 @@ namespace Platform.Services
             //await request(context);
         }
 
+        public async Task Format2(HttpContext context, string content,int i)
+        {
+            await context.Response.WriteAsync($"Responce {++responseCounter}: \n{content}, \n{i}");
+            //await request(context);
+        }
+
+
         public static TextResponseFormatter Singleton {
             
             get 

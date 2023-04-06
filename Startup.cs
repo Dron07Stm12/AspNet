@@ -50,62 +50,24 @@ namespace Platform
             app.UseMiddleware<WeatherMiddleware>();
 
             //внедрение зависимостей
-            IResponseFormatter formatter = new TextResponseFormatter();
+          
             app.Use(async (context, next) =>
             {
                 if (context.Request.Path == "/middleware/function")
                 {
-                    //Функция промежуточного программного обеспечения,через обьект
-                    //await formatter.Format(context, "Middleware Function: It is snowing in Chicago\n");
-                    //Служба TextResponseFormatter получает общий объект через статическое свойство Singleton
-                    await TextResponseFormatter.Singleton.Format(context, "Middleware static Function\n");
-                   // await TextResponseFormatter.Format_Static(context, "Middleware static Function");
+
+                    await TypeBroker.Formatter.Format(context,"class broker");
 
                 }
-
-                     else { await next.Invoke(); }
+                else { await next.Invoke(); }
 
             });
 
-            //через делегат
-            //TextResponseFormatter text = new TextResponseFormatter();
-            //Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> task)
-            //{
-            //    if (http.Request.Path == "/middleware/functions2")
-            //    {
-            //        await text.Format(http, "Func Middleware, new TextResponseFormatter()\n");
-            //        await formatter.Format(http, "Func Middleware, interface IResponseFormatter\n");
-            //    }
-            //    else { await task.Invoke(); }
-
-            //};
-            //app.Use(func);
-
-            RequestDelegate request = async delegate (HttpContext context) { await context.Response.WriteAsync("Endpoint Function: It is sunny in LA"); };
+           
             app.UseEndpoints(endpoints =>
-            {
-                TextResponseFormatter text2 = new TextResponseFormatter();
-                //endpoints.MapGet("/endpoint/class", WeatherEndpoint.Endpoint);
-
-                //endpoints.MapGet("/endpoint/function", async delegate (HttpContext context) { await text2.Format(context, "string delegat"); });
-                //endpoints.MapGet("/endpoint/function2", async cont => { await text2.Format(cont, "string lymbda"); });
-
-                //endpoints.MapGet("/endpoint/function3",async delegate(HttpContext context)
-                //{
-                //    //читаем  статическое свойство Singleton класса TextResponseFormatter,
-                //    // которое возвращает поле(shared), в которое ложится  обьект TextResponseFormatter
-                //    await TextResponseFormatter.Singleton.Format(context,"static delegat Singleton"); 
-                //});
-
-                endpoints.MapGet("/endpoint/function4",async(cont) => { await TextResponseFormatter.Singleton.Format(cont, "static lymbda Singleto"); });
-
-
-                //endpoints.MapGet("/endpoint/function3", async cont => { await TextResponseFormatter.Singleton.Format(cont, "function3"); });
-                ////endpoints.Map("/br", new WeatherMiddleware().Invoke2);
-                //endpoints.MapGet("/endpoint/function", async context =>
-                //{
-                //    await context.Response.WriteAsync("Endpoint Function: It is sunny in LA");
-                //});
+            {                            
+                endpoints.MapGet("/endpoint/function5",async delegate (HttpContext context) { await TypeBroker.Formatter.Format(context,"endpoint_broker"); });
+            
             });
 
 
@@ -880,4 +842,100 @@ namespace Platform
 
 
 //});
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+//непосредственное использование делегата
+//RequestDelegate request = async delegate (HttpContext context) { await context.Response.WriteAsync("Endpoint Function: It is sunny in LA"); };
+//Action<IEndpointRouteBuilder> action = delegate (IEndpointRouteBuilder endpoint) {
+
+//    endpoint.MapGet("/endpoint/function5", request);
+
+//};
+
+//app.UseEndpoints(action);
+
+
+//дальнейшая работа внедрение зависимостей 
+
+
+//public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+//{
+//    app.UseDeveloperExceptionPage();
+//    app.UseRouting();
+
+//    app.UseMiddleware<WeatherMiddleware>();
+
+//    //внедрение зависимостей
+//    IResponseFormatter formatter = new TextResponseFormatter();
+//    app.Use(async (context, next) =>
+//    {
+//        if (context.Request.Path == "/middleware/function")
+//        {
+//            //Функция промежуточного программного обеспечения,через обьект
+//            //await formatter.Format(context, "Middleware Function: It is snowing in Chicago\n");
+//            //Служба TextResponseFormatter получает общий объект через статическое свойство Singleton
+//            //await TextResponseFormatter.Singleton.Format(context, "Middleware static Function\n");
+
+
+//            await TypeBroker.Formatter.Format(context, "class broker");
+
+
+//            // await TextResponseFormatter.Format_Static(context, "Middleware static Function");
+
+//        }
+
+//        else { await next.Invoke(); }
+
+//    });
+
+//    //через делегат
+//    TextResponseFormatter text = new TextResponseFormatter();
+//    Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> task)
+//    {
+//        if (http.Request.Path == "/middleware/functions2")
+//        {
+//            await text.Format(http, "Func Middleware, new TextResponseFormatter()\n");
+//            await formatter.Format(http, "Func Middleware, interface IResponseFormatter\n");
+//        }
+//        else { await task.Invoke(); }
+
+//    };
+//    app.Use(func);
+
+
+//    app.UseEndpoints(endpoints =>
+//    {
+//        TextResponseFormatter text2 = new TextResponseFormatter();
+//        //endpoints.MapGet("/endpoint/class", WeatherEndpoint.Endpoint);
+
+//        //endpoints.MapGet("/endpoint/function", async delegate (HttpContext context) { await text2.Format(context, "string delegat"); });
+//        //endpoints.MapGet("/endpoint/function2", async cont => { await text2.Format(cont, "string lymbda"); });
+
+//        //endpoints.MapGet("/endpoint/function3",async delegate(HttpContext context)
+//        //{
+//        //    //читаем  статическое свойство Singleton класса TextResponseFormatter,
+//        //    // которое возвращает поле(shared), в которое ложится  обьект TextResponseFormatter
+//        //    await TextResponseFormatter.Singleton.Format(context,"static delegat Singleton"); 
+//        //});
+
+//        endpoints.MapGet("/endpoint/function4", async (cont) => { await TextResponseFormatter.Singleton.Format(cont, "static lymbda Singleto"); });
+
+//        endpoints.MapGet("/endpoint/function5", async delegate (HttpContext context) { await TypeBroker.Formatter.Format(context, "endpoint_broker"); });
+
+//        endpoints.MapGet("/endpoint/function6", async delegate (HttpContext http) { await text2.Format2(http, "обьект new TextResponseFormatter()", 3); });
+
+//        //endpoints.MapGet("/endpoint/function3", async cont => { await TextResponseFormatter.Singleton.Format(cont, "function3"); });
+//        ////endpoints.Map("/br", new WeatherMiddleware().Invoke2);
+//        //endpoints.MapGet("/endpoint/function", async context =>
+//        //{
+//        //    await context.Response.WriteAsync("Endpoint Function: It is sunny in LA");
+//        //});
+//    });
+
+
+//}
+
+
 
