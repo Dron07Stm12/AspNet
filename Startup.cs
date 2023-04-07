@@ -30,6 +30,8 @@ namespace Platform
 {
     
    
+    
+
     public class Startup
     {
       
@@ -38,19 +40,20 @@ namespace Platform
         public void ConfigureServices(IServiceCollection services)
         {
            
-
+            services.AddSingleton<IResponseFormatter,HtmlResponseFormatter>();
+          
         }
 
         // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,IResponseFormatter formatter_html)
         {
             app.UseDeveloperExceptionPage();
             app.UseRouting();
 
-            //app.UseMiddleware<WeatherMiddleware>();
+            app.UseMiddleware<WeatherMiddleware>();
 
             //внедрение зависимостей
-          
+
             app.Use(async (context, next) =>
             {
                 if (context.Request.Path == "/middleware/function")
@@ -63,24 +66,28 @@ namespace Platform
 
             });
 
-            app.Use(async (context, next) =>
+            Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> tsk)
             {
-                if (context.Request.Path == "/middleware/function2")
+                if (http.Request.Path == "/path")
                 {
-
-                    await WeatherMiddleware.Format(context,"middl");
-
+                    await formatter_html.Format(http, "func_delegate_services");
                 }
-                else { await next.Invoke(); }
+                //дальше движение по конвееру
+                else
+                {
+                    await tsk();
+                }
+            };
+            app.Use(func);
 
-            });
 
 
-           
 
             app.UseEndpoints(endpoints =>
-            {                            
-                endpoints.MapGet("/endpoint/function",async delegate (HttpContext context) { await TypeBroker.Formatter.Format(context,"endpoint_broker"); });
+            {
+
+                endpoints.MapGet("/endpoint/function_html_services", async delegate (HttpContext http) { await formatter_html.Format(http, "endpoint_services"); });
+
 
                 //через класс TypeBroker в котором есть ссылки на интерфейс(IResponseFormatter) и которые(ссылки интерфейса) ссылаются на обьекты
                 //классов(new TextResponseFormatter(),new HtmlResponseFormatter()) - поэтому через ссылки на интерфейс(IResponseFormatter), которые(ссылки интерфейса)
@@ -88,14 +95,12 @@ namespace Platform
                 //метода UseEndpoint, а также string метода  Format
                 endpoints.MapGet("/endpoint/function_html", async delegate (HttpContext context) { await TypeBroker.Formatterhtml.Format(context, "endpoint_broker_html");});
 
-                endpoints.MapGet("/endpoint/function_middl",async delegate (HttpContext context) { await WeatherMiddleware.Format(context,"endpoint_midd_weath"); });
-               
+                
+
             });
 
 
         }
-
-
     }
 }
 
@@ -985,4 +990,85 @@ namespace Platform
 //});
 
 
+
+//класс Startap
+//public class Startup
+//{
+
+//    // This method gets called by the runtime. Use this method to add services to the container.
+//    // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+//    public void ConfigureServices(IServiceCollection services)
+//    {
+
+
+//    }
+
+//    // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
+//    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+//    {
+//        app.UseDeveloperExceptionPage();
+//        app.UseRouting();
+
+//        //app.UseMiddleware<WeatherMiddleware>();
+
+//        //внедрение зависимостей
+
+//        app.Use(async (context, next) =>
+//        {
+//            if (context.Request.Path == "/middleware/function")
+//            {
+
+//                await TypeBroker.Formatter.Format(context, "class broker");
+
+//            }
+//            else { await next.Invoke(); }
+
+//        });
+
+//        app.Use(async (context, next) =>
+//        {
+//            if (context.Request.Path == "/middleware/function2")
+//            {
+
+//                await WeatherMiddleware.Format(context, "middl");
+
+//            }
+//            else { await next.Invoke(); }
+
+//        });
+
+
+//        app.Map("/b", delegate (IApplicationBuilder builder) { builder.Run(async delegate (HttpContext http) { await http.Response.WriteAsync("Map"); }); });
+
+//        app.UseEndpoints(endpoints =>
+//        {
+//            endpoints.MapGet("/endpoint/function", async delegate (HttpContext context) { await TypeBroker.Formatter.Format(context, "endpoint_broker"); });
+
+//            //через класс TypeBroker в котором есть ссылки на интерфейс(IResponseFormatter) и которые(ссылки интерфейса) ссылаются на обьекты
+//            //классов(new TextResponseFormatter(),new HtmlResponseFormatter()) - поэтому через ссылки на интерфейс(IResponseFormatter), которые(ссылки интерфейса)
+//            //ссылаются на обьекты классов, обратимся к асинхронному  методу Format в котором  в том числе и  реализуем RequestDelegate делегат -  конечной точки
+//            //метода UseEndpoint, а также string метода  Format
+//            endpoints.MapGet("/endpoint/function_html", async delegate (HttpContext context) { await TypeBroker.Formatterhtml.Format(context, "endpoint_broker_html"); });
+
+//            endpoints.MapGet("/endpoint/function_middl", async delegate (HttpContext context) { await WeatherMiddleware.Format(context, "endpoint_midd_weath"); });
+
+//            endpoints.MapGet("/endpoint/html", async delegate (HttpContext context) { await new HtmlResponseFormatter().Format(context, "class_html"); });
+//            // по умолчанию
+//            endpoints.MapGet("/", async delegate (HttpContext context) { await new HtmlResponseFormatter().Format(context, "class_html"); });
+//            endpoints.Map("/br", async delegate (HttpContext context) { await new HtmlResponseFormatter().Format(context, "class_html"); });
+
+//        });
+
+
+//    }
+//}
+
+//еще одна реализация MapGet в endpoints
+//endpoints.MapGet("/endpoint/class", async delegate (HttpContext context) {
+//    if (context.Request.Query["key"] == "dron")
+//    {
+//        await WeatherEndpoint.Endpoint(context);
+//    }
+
+//});
 

@@ -19,15 +19,15 @@ namespace Platform.Platform
         }
 
 
-        //public async Task Invoke(HttpContext http)
-        //{
-        //    if (http.Request.Path == "/middleware/class")
-        //    {
-        //        await http.Response.WriteAsync("Middleware Class: It is raining in London");
-        //    }
-        //    else { await request.Invoke(http); }
+        public async Task Invoke(HttpContext http)
+        {
+            if (http.Request.Path == "/middleware/class")
+            {
+                await http.Response.WriteAsync("Middleware Class: It is raining in London");
+            }
+            else { await request.Invoke(http); }
 
-        //}
+        }
 
 
         public async static Task Format(HttpContext context, string content)
