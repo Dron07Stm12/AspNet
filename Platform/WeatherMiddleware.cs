@@ -1,16 +1,19 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
+using Platform.Services;
 
 namespace Platform.Platform
 {
     public class WeatherMiddleware
     {
         private RequestDelegate request;
+        private IResponseFormatter formatter;
         private static int responseCounter;
 
-        public WeatherMiddleware(RequestDelegate request)
+        public WeatherMiddleware(RequestDelegate request, IResponseFormatter formatter)
         {
             this.request = request;
+            this.formatter = formatter;
         }
 
         public WeatherMiddleware()
@@ -19,13 +22,26 @@ namespace Platform.Platform
         }
 
 
+        //public async Task Invoke(HttpContext http)
+        //{
+        //    if (http.Request.Path == "/middleware/class")
+        //    {
+        //        //await formatter.Format(http, "services_middleware_class");
+        //        await http.Response.WriteAsync("Middleware Class: It is raining in London");
+
+        //    }
+        //    else
+        //    {                
+        //     await request.Invoke(http);
+        //    }
+
+        //}
+
         public async Task Invoke(HttpContext http)
         {
-            if (http.Request.Path == "/middleware/class")
-            {
-                await http.Response.WriteAsync("Middleware Class: It is raining in London");
-            }
-            else { await request.Invoke(http); }
+
+            await http.Response.WriteAsync("Middleware Class");
+        
 
         }
 
