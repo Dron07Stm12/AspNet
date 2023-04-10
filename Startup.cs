@@ -65,132 +65,13 @@ namespace Platform
         {
             app.UseDeveloperExceptionPage();
             app.UseRouting();
-
-            //app.UseMiddleware<WeatherMiddleware>();
+         
             app.UseMiddleware<Middelware_service>();
-
-
-            app.Map("/method", delegate (IApplicationBuilder builder)
-            {
-                builder.Use(delegate (RequestDelegate request)
-                {
-
-                    Func<RequestDelegate, RequestDelegate> middleware2 = delegate (RequestDelegate request_func) { return new Middelware_service(request_func, formatter_html).Invoke; };
-                    return middleware2(request);
-
-                });
-            });
-
-            app.Map("/method2", delegate (IApplicationBuilder builder2)
-            {
-
-                builder2.Use(delegate (RequestDelegate request)
-                {
-
-                    return new Middelware_service(request, formatter_html).Invoke;
-                });
-
-            });
-
-
-            app.Use(delegate (RequestDelegate request)
-            {
-
-                return new Middelware_service(request, formatter_html).Invoke;
-                // Middelware_service service = new Middelware_service(request, formatter_html);
-                //return service.Invoke;
-
-            });
-
-            app.Use( req => { return new Middelware_service(req,formatter_html).Invoke; });
-
-
-            //внедрение зависимостей
-
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Path == "/middleware/function")
-                {
-
-                    await TypeBroker.Formatter.Format(context,"class broker");
-
-                }
-                else { await next.Invoke(); }
-
-            });
-
-            Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> tsk)
-            {
-                if (http.Request.Path == "/path")
-                {
-                    await formatter_html.Format(http, "func_delegate_services");
-                }
-                //дальше движение по конвееру
-                else
-                {
-                    await tsk();
-                }
-            };
-            app.Use(func);
-
-
-
-
-            RequestDelegate request2 = async delegate (HttpContext context) { await context.Response.WriteAsync("Middleware"); };
-            Func<HttpContext, Func<Task>, Task> func2 = async delegate (HttpContext http, Func<Task> tsk)
-            {
-                if (http.Request.Path == "/path2")
-                {
-                    await new WeatherMiddleware(request2,formatter_html).Invoke(http);
-                }
-                //дальше движение по конвееру
-                else
-                {
-                    await tsk();
-                }
-            };
-            app.Use(func2);
-
-
-            Func<HttpContext, Func<Task>, Task> func3 = async delegate (HttpContext context, Func<Task> task)
-            {
-                await new WeatherMiddleware().Invoke(context);
-                await task();
-            };
-
-            Action<IApplicationBuilder> value = delegate (IApplicationBuilder builder)
-            {
-                builder.Use(func3);
-            };
-            app.Map("/middl", value);
-
-
-
-
-
-
 
             app.UseEndpoints(endpoints =>
             {
-
-                endpoints.MapGet("/endpoint/function_html_services", async delegate (HttpContext http) { await formatter_html.Format(http, "endpoint_services"); });
-
-                RequestDelegate request = async delegate (HttpContext context) { await context.Response.WriteAsync("Endpoint"); };
-                //через класс TypeBroker в котором есть ссылки на интерфейс(IResponseFormatter) и которые(ссылки интерфейса) ссылаются на обьекты
-                //классов(new TextResponseFormatter(),new HtmlResponseFormatter()) - поэтому через ссылки на интерфейс(IResponseFormatter), которые(ссылки интерфейса)
-                //ссылаются на обьекты классов, обратимся к асинхронному  методу Format в котором  в том числе и  реализуем RequestDelegate делегат -  конечной точки
-                //метода UseEndpoint, а также string метода  Format
-                endpoints.MapGet("/endpoint/function_html", async delegate (HttpContext context) { await TypeBroker.Formatterhtml.Format(context, "endpoint_broker_html");});
-
-                //endpoints.MapGet("/endpoint", async delegate (HttpContext context) { await new WeatherMiddleware(request, formatter_html).Invoke(context); });
-
-                endpoints.Map("/br",WeatherEndpoint.Endpoint);
-                endpoints.Map("/br2", async delegate(HttpContext http) {
-                    await WeatherMiddleware.Format(http,"static_method_Weath...");
-                });
-                endpoints.Map("/br3",new WeatherMiddleware().Invoke);
-                endpoints.MapGet("/br4", new WeatherMiddleware().Invoke);
-
+                endpoints.Map("/br", WeatherEndpoint.Endpoint_service);
+                endpoints.MapGet("/br2",WeatherEndpoint.Endpoint_service);
             });
 
 
@@ -1203,3 +1084,169 @@ namespace Platform
 
 //};
 
+
+//класс Startap - работа сервисов
+//public class Startup
+//{
+
+//    // This method gets called by the runtime. Use this method to add services to the container.
+//    // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+
+//    //Службы регистрируются в методе ConfigureServices класса Startup с использованием методов расширений на
+//    // параметр IServiceCollection. Далее создания службы для интерфейса IResponseFormatter.
+
+//    public void ConfigureServices(IServiceCollection services)
+//    {
+//        //Метод AddSingleton является одним из методов расширения, доступных для служб, и сообщает ASP.NET Core, что один объект
+//        //следует использовать для удовлетворения потребностей в сервисе.
+//        // Интерфейс и класс реализации указываются как аргументы универсального типа.Чтобы использовать сервис, я добавил
+//        //параметр в метода Configure.
+//        services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
+
+//    }
+
+//    // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
+
+//    //Новый параметр объявляет зависимость от интерфейса IResponseFormatter, и считается, что метод зависит от
+//    //интерфейса.Перед вызовом метода Configure проверяются его параметры, обнаруживается зависимость и
+//    //службы проверяются, чтобы определить, возможно ли разрешить зависимость.Регистрация в методе ConfigureServices
+//    //сообщает системе внедрения зависимостей, что зависимость от интерфейса IResponseFormatter может быть разрешена с
+//    //помощью объекта HtmlResponseFormatter.Объект создается и используется в качестве аргумента для вызова метода.
+//    //Поскольку объект, который разрешает зависимость, предоставленную извне класса или функции, которая ее использует,
+//    //говорят, что она была внедрена, поэтомупроцесс известен как внедрение зависимостей.
+
+//    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IResponseFormatter formatter_html)
+//    {
+//        app.UseDeveloperExceptionPage();
+//        app.UseRouting();
+
+//        //app.UseMiddleware<WeatherMiddleware>();
+//        app.UseMiddleware<Middelware_service>();
+
+
+//        app.Map("/method", delegate (IApplicationBuilder builder)
+//        {
+//            builder.Use(delegate (RequestDelegate request)
+//            {
+
+//                Func<RequestDelegate, RequestDelegate> middleware2 = delegate (RequestDelegate request_func) { return new Middelware_service(request_func, formatter_html).Invoke; };
+//                return middleware2(request);
+
+//            });
+//        });
+
+//        app.Map("/method2", delegate (IApplicationBuilder builder2)
+//        {
+
+//            builder2.Use(delegate (RequestDelegate request)
+//            {
+
+//                return new Middelware_service(request, formatter_html).Invoke;
+//            });
+
+//        });
+
+
+//        app.Use(delegate (RequestDelegate request)
+//        {
+
+//            return new Middelware_service(request, formatter_html).Invoke;
+//            // Middelware_service service = new Middelware_service(request, formatter_html);
+//            //return service.Invoke;
+
+//        });
+
+//        app.Use(req => { return new Middelware_service(req, formatter_html).Invoke; });
+
+
+//        //внедрение зависимостей
+
+//        app.Use(async (context, next) =>
+//        {
+//            if (context.Request.Path == "/middleware/function")
+//            {
+
+//                await TypeBroker.Formatter.Format(context, "class broker");
+
+//            }
+//            else { await next.Invoke(); }
+
+//        });
+
+//        Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> tsk)
+//        {
+//            if (http.Request.Path == "/path")
+//            {
+//                await formatter_html.Format(http, "func_delegate_services");
+//            }
+//            //дальше движение по конвееру
+//            else
+//            {
+//                await tsk();
+//            }
+//        };
+//        app.Use(func);
+
+
+
+
+//        RequestDelegate request2 = async delegate (HttpContext context) { await context.Response.WriteAsync("Middleware"); };
+//        Func<HttpContext, Func<Task>, Task> func2 = async delegate (HttpContext http, Func<Task> tsk)
+//        {
+//            if (http.Request.Path == "/path2")
+//            {
+//                await new WeatherMiddleware(request2, formatter_html).Invoke(http);
+//            }
+//            //дальше движение по конвееру
+//            else
+//            {
+//                await tsk();
+//            }
+//        };
+//        app.Use(func2);
+
+
+//        Func<HttpContext, Func<Task>, Task> func3 = async delegate (HttpContext context, Func<Task> task)
+//        {
+//            await new WeatherMiddleware().Invoke(context);
+//            await task();
+//        };
+
+//        Action<IApplicationBuilder> value = delegate (IApplicationBuilder builder)
+//        {
+//            builder.Use(func3);
+//        };
+//        app.Map("/middl", value);
+
+
+
+
+
+
+
+//        app.UseEndpoints(endpoints =>
+//        {
+
+//            endpoints.MapGet("/endpoint/function_html_services", async delegate (HttpContext http) { await formatter_html.Format(http, "endpoint_services"); });
+
+//            RequestDelegate request = async delegate (HttpContext context) { await context.Response.WriteAsync("Endpoint"); };
+//            //через класс TypeBroker в котором есть ссылки на интерфейс(IResponseFormatter) и которые(ссылки интерфейса) ссылаются на обьекты
+//            //классов(new TextResponseFormatter(),new HtmlResponseFormatter()) - поэтому через ссылки на интерфейс(IResponseFormatter), которые(ссылки интерфейса)
+//            //ссылаются на обьекты классов, обратимся к асинхронному  методу Format в котором  в том числе и  реализуем RequestDelegate делегат -  конечной точки
+//            //метода UseEndpoint, а также string метода  Format
+//            endpoints.MapGet("/endpoint/function_html", async delegate (HttpContext context) { await TypeBroker.Formatterhtml.Format(context, "endpoint_broker_html"); });
+
+//            //endpoints.MapGet("/endpoint", async delegate (HttpContext context) { await new WeatherMiddleware(request, formatter_html).Invoke(context); });
+
+//            endpoints.Map("/br", WeatherEndpoint.Endpoint);
+//            endpoints.Map("/br2", async delegate (HttpContext http) {
+//                await WeatherMiddleware.Format(http, "static_method_Weath...");
+//            });
+//            endpoints.Map("/br3", new WeatherMiddleware().Invoke);
+//            endpoints.MapGet("/br4", new WeatherMiddleware().Invoke);
+//            endpoints.Map("/br5", WeatherEndpoint.Endpoint_service);
+//        });
+
+
+//    }
+//}

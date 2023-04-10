@@ -11,16 +11,33 @@ namespace Platform
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
-            CreateHostBuilder(args).Build().Run();
+            //Creat().Build().Start();
+            Creat().Build().Run();
+            
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
+        //public static void Main(string[] args)
+        //{
+        //    CreateHostBuilder(args).Build().Run();
+        //}
+
+        //public static IHostBuilder CreateHostBuilder(string[] args) =>
+        //    Host.CreateDefaultBuilder(args)
+        //        .ConfigureWebHostDefaults(webBuilder =>
+        //        {
+        //            webBuilder.UseStartup<Startup>();
+        //        });
+
+        public static IHostBuilder Creat() {
+            return Host.CreateDefaultBuilder().
+                ConfigureWebHostDefaults(delegate (IWebHostBuilder hostBuilder) 
                 {
-                    webBuilder.UseStartup<Startup>();
-                });
+                    hostBuilder.UseStartup<Startup>(); 
+                });      
+        }
+
+
     }
 }
