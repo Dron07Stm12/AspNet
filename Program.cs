@@ -34,7 +34,9 @@ namespace Platform
             return Host.CreateDefaultBuilder().
                 ConfigureWebHostDefaults(delegate (IWebHostBuilder hostBuilder) 
                 {
-                    hostBuilder.UseStartup<Startup>(); 
+                    Type myType = typeof(Startup);
+                    hostBuilder.UseStartup(myType);
+                    //hostBuilder.UseStartup<Startup>(); 
                 });      
         }
 

@@ -65,13 +65,158 @@ namespace Platform
         {
             app.UseDeveloperExceptionPage();
             app.UseRouting();
-         
+
             app.UseMiddleware<Middelware_service>();
+
+            app.Use(delegate (HttpContext http,Func<Task> tsk) {
+                if (http.Request.Path == "/dron")
+                {
+                    return new Middelware_service().Invoke2(http);
+                }
+                else
+                {
+                    return tsk();   
+                }          
+            });
+
+
+            app.Use(delegate (RequestDelegate request) { return new Middelware_service(request,formatter_html).Invoke3; });
+
+            app.Map("/method2", delegate (IApplicationBuilder builder2)
+            {
+
+                builder2.Use(delegate (RequestDelegate request)
+                {
+
+                    return new Middelware_service(request, formatter_html).Invoke3;
+                });
+
+            });
+
+
+            Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> tsk)
+            {
+              if (http.Request.Path == "/path")
+              {
+                    await Middelware_service.Invoke_format(http,"dron",formatter_html);
+              }
+              //дальше движение по конвееру
+              else
+              {
+                await tsk();
+              }
+           };
+            app.Use(func);
+
+
+            app.Use(async(cont,next) => {
+
+                if (cont.Request.Path == "/use")
+                {
+                    await Middelware_service.Invoke_format(cont, "use", formatter_html);
+                }
+
+                else { await next(); }
+            
+            });
+
+            app.Use(async delegate (HttpContext context,Func<Task> tsk) 
+            {
+                if (context.Request.Path == "/delegate_use")
+                {
+                    await Middelware_service.Invoke_format(context, "delegate_use", formatter_html);
+                }
+
+
+                else { await tsk(); }
+
+
+
+            });
+
+
+
+            //app.Use(delegate(RequestDelegate request) 
+            //{
+            //    request = async delegate (HttpContext context)
+            //    {
+
+            //        if (context.Request.Path == "/use_delegate")
+            //        {
+            //            await Middelware_service.Invoke_format(context, "use_delegate", formatter_html);
+            //        }
+
+
+            //    };
+
+            //    return request;
+            //});
+
+            // метод Map использует ветку пути("/map") и делегат  Action<IApplicationBuilder>
+            // c входящим типом IApplicationBuilder - через него(ссылку интерфейса  IApplicationBuilder) мы обращаемся к методу Use
+            // а именно к реализации IApplicationBuilder Use(Func<RequestDelegate, RequestDelegate> middleware);
+            // и реализуя делегат(request) возратим задачу метода Invoke_format с учетом делегата(RequestDelegate) и сервиса(IResponseFormatter formatter_html)
+            app.Map("/map", delegate (IApplicationBuilder builder)
+            {
+                builder.Use(delegate (RequestDelegate request)
+                {
+
+                    request = async delegate (HttpContext http)
+                    {
+                        await Middelware_service.Invoke_format(http,"Map",formatter_html);
+                        
+                    };
+                    return request;
+
+
+                });
+            });
+
+
+
+
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.Map("/br", WeatherEndpoint.Endpoint_service);
-                endpoints.MapGet("/br2",WeatherEndpoint.Endpoint_service);
+                endpoints.Map("/br2", async (cont) => await WeatherEndpoint.Endpoint_service(cont));
+                endpoints.MapGet("/br3", async delegate (HttpContext context) { await WeatherEndpoint.Endpoint_service(context); });
+                endpoints.MapGet("/br4",  delegate (HttpContext context) { return WeatherEndpoint.Endpoint_service(context); });
+
+                endpoints.MapGet("/br5", async delegate (HttpContext http) { await WeatherEndpoint.Endpoint_format(http, "await_dron", formatter_html); });
+                endpoints.MapGet("/br6", delegate (HttpContext http) { return WeatherEndpoint.Endpoint_format(http, "return_dron", formatter_html); });
+                endpoints.Map("/br7", async (cont) => await WeatherEndpoint.Endpoint_format(cont, "lymbda", formatter_html));
+
+                endpoints.MapGet("/br8",  delegate (HttpContext context) { return  formatter_html.Format(context, "class HtmlResponseFormatter"); });
+
+                // класс Middelware_service()
+                endpoints.MapGet("/br9", delegate (HttpContext http) { return new Middelware_service().Invoke2(http); });
+
+                endpoints.MapWeather("/endpoint/class");
+                endpoints.MapUser("/endpoint/user");
+                
+                Action<IEndpointRouteBuilder> action = delegate (IEndpointRouteBuilder routeBuilder) {
+
+                    Type type = typeof(IResponseFormatter);
+
+                    IResponseFormatter formatter = (IResponseFormatter)routeBuilder.ServiceProvider.GetService(type);
+                    routeBuilder.Map("/t", delegate (HttpContext context) { return WeatherEndpoint.Endpoint_format2(context, formatter); });
+
+                };
+                action(endpoints);
+
+                Action<IEndpointRouteBuilder> action2 = delegate (IEndpointRouteBuilder routeBuilder) {
+                    Type type = typeof(IResponseFormatter);
+                    IResponseFormatter formatter = (IResponseFormatter)routeBuilder.ServiceProvider.GetService(type);
+                    routeBuilder.MapGet("/action2", delegate (HttpContext context) { return WeatherEndpoint.Endpoint_format(context,
+                        "Action<IEndpointRouteBuilder> action2", formatter); 
+                    });
+                };
+                action2(endpoints);
+
+                endpoints.MapUserr("/endpoint/user3");
+                endpoints.MapWeather("/endpoint/user4");
+
             });
 
 
@@ -1245,6 +1390,289 @@ namespace Platform
 //            endpoints.Map("/br3", new WeatherMiddleware().Invoke);
 //            endpoints.MapGet("/br4", new WeatherMiddleware().Invoke);
 //            endpoints.Map("/br5", WeatherEndpoint.Endpoint_service);
+//        });
+
+
+//    }
+//}
+
+
+//некоторая работа классов Middelware_service,
+//public class Middelware_service
+//{
+//    private RequestDelegate request;
+//    private IResponseFormatter formatter;
+
+//    public Middelware_service(RequestDelegate request, IResponseFormatter formatter)
+//    {
+//        this.request = request;
+//        this.formatter = formatter;
+//    }
+
+//    public Middelware_service()
+//    {
+
+//    }
+
+//    public async Task Invoke(HttpContext http)
+//    {
+//        if (http.Request.Path == "/class_middlware_service")
+//        {
+//            await formatter.Format(http, "class_middlware_service");
+//        }
+
+//        else { await request(http); }
+//    }
+
+//    public static async Task Invoke_format(HttpContext http, string s, IResponseFormatter response)
+//    {
+//        await response.Format(http, "class_middlware_service_static");
+//    }
+
+//    public async Task Invoke2(HttpContext context)
+//    {
+//        await context.Response.WriteAsync("method run\t");
+//    }
+
+//    public async Task Invoke3(HttpContext context)
+//    {
+//        if (context.Request.Path == "/Invoke3")
+//        {
+//            await formatter.Format(context, "Invoke3");
+
+//        }
+//        else
+//        {
+//            await request(context);
+//        }
+
+//    }
+//}
+
+// и класса WeatherEndpoin
+//public class WeatherEndpoint
+//{
+//    private static int responce;
+//    public static async Task Endpoint(HttpContext http)
+//    {
+//        await http.Response.WriteAsync($"Endpoint Class: It is cloudy in Milan {++responce}");
+//    }
+
+//    //Свойство HttpContext.RequestServices возвращает объект, реализующий интерфейсы IServiceProvider, которые
+//    // предоставляет доступ к службам, настроенным в методе Start.ConfigureServices приложения.Microsoft.
+//    //Пространство имен Extensions.DependencyInjection,
+//    public static async Task Endpoint_service(HttpContext http)
+//    {
+//        //GetRequiredService<IResponseFormatter>() -    метод возвращает службу, указанную параметром универсального типа. 
+//        //служба которая находится в  Startape
+//        IResponseFormatter formatter = http.RequestServices.GetRequiredService<IResponseFormatter>();
+//        await formatter.Format(http, "Static_Endpoint_service");
+//    }
+
+//    public static async Task Endpoint_format(HttpContext http, string s, IResponseFormatter response)
+//    {
+//        await response.Format(http, s);
+
+//    }
+
+//}
+
+// их реализация через сервис класса HtmlResponseFormatter
+//public class HtmlResponseFormatter : IResponseFormatter
+//{
+//    public static int responseCounter;
+
+//    public async Task Format(HttpContext context, string content)
+//    {
+//        context.Response.ContentType = "text/html";
+//        await context.Response.WriteAsync($@"
+
+//             <!DOCTYPE html>
+//             <html lang=""en"">
+//               <head>
+//               <title>Response</title>
+
+//                <style>
+//                    body {{
+//                    color:green;
+//                        }}
+//                     </style>
+
+//               </head>
+//                 <body>
+//                    <h2>Formatted Response</h2>
+//                           <span>{content}</span>
+//                             <span>{++HtmlResponseFormatter.responseCounter}</span>
+//                </body>
+//             </html> "
+//        );
+
+//    }
+//}
+
+// в Startape
+//public class Startup
+//{
+
+//    // This method gets called by the runtime. Use this method to add services to the container.
+//    // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+
+//    //Службы регистрируются в методе ConfigureServices класса Startup с использованием методов расширений на
+//    // параметр IServiceCollection. Далее создания службы для интерфейса IResponseFormatter.
+
+//    public void ConfigureServices(IServiceCollection services)
+//    {
+//        //Метод AddSingleton является одним из методов расширения, доступных для служб, и сообщает ASP.NET Core, что один объект
+//        //следует использовать для удовлетворения потребностей в сервисе.
+//        // Интерфейс и класс реализации указываются как аргументы универсального типа.Чтобы использовать сервис, я добавил
+//        //параметр в метода Configure.
+//        services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
+
+//    }
+
+//    // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
+
+//    //Новый параметр объявляет зависимость от интерфейса IResponseFormatter, и считается, что метод зависит от
+//    //интерфейса.Перед вызовом метода Configure проверяются его параметры, обнаруживается зависимость и
+//    //службы проверяются, чтобы определить, возможно ли разрешить зависимость.Регистрация в методе ConfigureServices
+//    //сообщает системе внедрения зависимостей, что зависимость от интерфейса IResponseFormatter может быть разрешена с
+//    //помощью объекта HtmlResponseFormatter.Объект создается и используется в качестве аргумента для вызова метода.
+//    //Поскольку объект, который разрешает зависимость, предоставленную извне класса или функции, которая ее использует,
+//    //говорят, что она была внедрена, поэтомупроцесс известен как внедрение зависимостей.
+
+//    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IResponseFormatter formatter_html)
+//    {
+//        app.UseDeveloperExceptionPage();
+//        app.UseRouting();
+
+//        app.UseMiddleware<Middelware_service>();
+
+//        app.Use(delegate (HttpContext http, Func<Task> tsk) {
+//            if (http.Request.Path == "/dron")
+//            {
+//                return new Middelware_service().Invoke2(http);
+//            }
+//            else
+//            {
+//                return tsk();
+//            }
+//        });
+
+
+//        app.Use(delegate (RequestDelegate request) { return new Middelware_service(request, formatter_html).Invoke3; });
+
+//        app.Map("/method2", delegate (IApplicationBuilder builder2)
+//        {
+
+//            builder2.Use(delegate (RequestDelegate request)
+//            {
+
+//                return new Middelware_service(request, formatter_html).Invoke3;
+//            });
+
+//        });
+
+
+
+//        Func<HttpContext, Func<Task>, Task> func = async delegate (HttpContext http, Func<Task> tsk)
+//        {
+//            if (http.Request.Path == "/path")
+//            {
+//                await Middelware_service.Invoke_format(http, "dron", formatter_html);
+//            }
+//            //дальше движение по конвееру
+//            else
+//            {
+//                await tsk();
+//            }
+//        };
+//        app.Use(func);
+
+
+//        app.Use(async (cont, next) => {
+
+//            if (cont.Request.Path == "/use")
+//            {
+//                await Middelware_service.Invoke_format(cont, "use", formatter_html);
+//            }
+
+//            else { await next(); }
+
+//        });
+
+//        app.Use(async delegate (HttpContext context, Func<Task> tsk)
+//        {
+//            if (context.Request.Path == "/delegate_use")
+//            {
+//                await Middelware_service.Invoke_format(context, "delegate_use", formatter_html);
+//            }
+
+
+//            else { await tsk(); }
+
+
+
+//        });
+
+
+
+//        //app.Use(delegate(RequestDelegate request) 
+//        //{
+//        //    request = async delegate (HttpContext context)
+//        //    {
+
+//        //        if (context.Request.Path == "/use_delegate")
+//        //        {
+//        //            await Middelware_service.Invoke_format(context, "use_delegate", formatter_html);
+//        //        }
+
+
+//        //    };
+
+//        //    return request;
+//        //});
+
+//        // метод Map использует ветку пути("/map") и делегат  Action<IApplicationBuilder>
+//        // c входящим типом IApplicationBuilder - через него(ссылку интерфейса  IApplicationBuilder) мы обращаемся к методу Use
+//        // а именно к реализации IApplicationBuilder Use(Func<RequestDelegate, RequestDelegate> middleware);
+//        // и реализуя делегат(request) возратим задачу метода Invoke_format с учетом делегата(RequestDelegate) и сервиса(IResponseFormatter formatter_html)
+//        app.Map("/map", delegate (IApplicationBuilder builder)
+//        {
+//            builder.Use(delegate (RequestDelegate request)
+//            {
+
+//                request = async delegate (HttpContext http)
+//                {
+//                    await Middelware_service.Invoke_format(http, "Map", formatter_html);
+
+//                };
+//                return request;
+
+
+//            });
+//        });
+
+
+
+
+
+//        app.UseEndpoints(endpoints =>
+//        {
+//            endpoints.Map("/br", WeatherEndpoint.Endpoint_service);
+//            endpoints.Map("/br2", async (cont) => await WeatherEndpoint.Endpoint_service(cont));
+//            endpoints.MapGet("/br3", async delegate (HttpContext context) { await WeatherEndpoint.Endpoint_service(context); });
+//            endpoints.MapGet("/br4", delegate (HttpContext context) { return WeatherEndpoint.Endpoint_service(context); });
+
+//            endpoints.MapGet("/br5", async delegate (HttpContext http) { await WeatherEndpoint.Endpoint_format(http, "await_dron", formatter_html); });
+//            endpoints.MapGet("/br6", delegate (HttpContext http) { return WeatherEndpoint.Endpoint_format(http, "return_dron", formatter_html); });
+//            endpoints.Map("/br7", async (cont) => await WeatherEndpoint.Endpoint_format(cont, "lymbda", formatter_html));
+
+
+//            endpoints.MapGet("/br8", delegate (HttpContext context) { return formatter_html.Format(context, "class HtmlResponseFormatter"); });
+
+
+//            // класс Middelware_service()
+//            endpoints.MapGet("/br9", delegate (HttpContext http) { return new Middelware_service().Invoke2(http); });
 //        });
 
 

@@ -15,7 +15,16 @@ namespace Platform.Services
 
              <!DOCTYPE html>
              <html lang=""en"">
-               <head><title>Response</title></head>
+               <head>
+               <title>Response</title>
+               
+                <style>
+                    body {{
+                    color:green;
+                        }}
+                     </style>
+
+               </head>
                  <body>
                     <h2>Formatted Response</h2>
                            <span>{content}</span>

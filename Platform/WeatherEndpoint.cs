@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Platform.Services;
+using System;
+
 namespace Platform.Platform
 {
     public class WeatherEndpoint
@@ -22,11 +24,17 @@ namespace Platform.Platform
             await formatter.Format(http, "Static_Endpoint_service");
         }
 
-        //public static async Task Endpoint_format(HttpContext http,string s, IResponseFormatter response)
-        //{
-        //  await response.Format(http, s);
-        
-        //}
+        public static async Task Endpoint_format(HttpContext http, string s, IResponseFormatter response)
+        {
+            await response.Format(http, s);
+
+        }
+
+
+        public static async Task Endpoint_format2(HttpContext context,IResponseFormatter formatter) 
+        {
+            await formatter.Format(context, "Endpoint_format2");
+        }
 
 
     }

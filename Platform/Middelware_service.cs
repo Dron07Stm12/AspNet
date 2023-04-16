@@ -33,12 +33,32 @@ namespace Platform.Platform
             else { await request(http); }
         }
 
-
-        public async Task Invoke2(HttpContext context) 
-        {           
-                await context.Response.WriteAsync("method run\n");                
+        public static async Task Invoke_format(HttpContext http, string s, IResponseFormatter response)
+        {                   
+                await response.Format(http, "class_middlware_service_static");                       
         }
 
 
+        public async Task Invoke2(HttpContext context) 
+        {           
+                await context.Response.WriteAsync("method run\t");                
+        }
+
+        public async Task Invoke3(HttpContext context)
+        {
+            if (context.Request.Path == "/Invoke3")
+            {
+                await formatter.Format(context, "Invoke3");
+
+            }
+            else
+            {
+                await request(context);
+            }
+
+
+           
+           
+        }
     }
 }
