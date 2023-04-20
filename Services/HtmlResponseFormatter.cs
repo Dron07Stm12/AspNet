@@ -16,19 +16,38 @@ namespace Platform.Services
              <!DOCTYPE html>
              <html lang=""en"">
                <head>
+
+              <link rel=""stylesheet"" href=""https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css"" integrity=""sha384-
+                               /Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M"" crossorigin=""anonymous"" />
+
+
                <title>Response</title>
                
-                <style>
-                    body {{
-                    color:green;
-                        }}
-                     </style>
+               
 
                </head>
                  <body>
-                    <h2>Formatted Response</h2>
+
+                   <div class=""container"">
+                   <div class=""jumbotron"">
+                     <h2 class=""display-3"">Formatted Response</h2>
                            <span>{content}</span>
                              <span>{++HtmlResponseFormatter.responseCounter}</span>
+                     <hr />
+
+                      <a class=""btn btn-primary"" href=""https://www.asp.net/"">Learn more</a>
+
+                   </div>
+                 </div>
+
+
+
+
+
+
+
+
+                   
                 </body>
              </html> " 
             );
