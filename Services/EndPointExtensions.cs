@@ -6,7 +6,8 @@ using System;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Platform.Platform;
-
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Platform.Services
 {
@@ -28,15 +29,16 @@ namespace Platform.Services
         {
             IServiceProvider provider = app.ServiceProvider;
             //получение информации о типе
+        
             Type type = typeof(IResponseFormatter);
 
             //явное приведение типа object метода GetService(Type) к типу интерфейса(IResponseFormatter) для возвращения службы указанного типа
             IResponseFormatter formatter1 = (IResponseFormatter)provider.GetService(type);
 
             //или  метод GetService<IResponseFormatter>() возвращает службу для типа, указанного параметром универсального типа
-            formatter1 = provider.GetService<IResponseFormatter>();
+            IResponseFormatter formatter2 = provider.GetService<IResponseFormatter>();
            // app.Map(s, async delegate (HttpContext context) { await formatter1.Format(context, "MapUse"); });
-            app.MapGet(s, delegate (HttpContext context) { return WeatherEndpoint.Endpoint_format(context,"new_format",formatter1); });
+            app.MapGet(s, delegate (HttpContext context) { return WeatherEndpoint.Endpoint_format(context,"new_format",formatter2); });
         }
 
 
@@ -47,6 +49,73 @@ namespace Platform.Services
             IResponseFormatter formatter = (IResponseFormatter)app.ServiceProvider.GetService(type);
             app.Map(s, async delegate (HttpContext context) { await formatter.Format(context, "MapUse"); }) ;
                
+        }
+
+
+        //метод расширения принемающий параметр уневерсального типа <T>
+        //указывающий класс конечной точки(typeof(RequestDelegate))
+        // также путь(string path) для маршрута
+        // и имя метода(string methodName = "EndpointEx") класса конечной точки, обрабатывающего запросы
+        public static void MapEndpoints<T>(this IEndpointRouteBuilder app, string path, string methodName = "EndpointEx2")
+        {
+
+            MethodInfo methodInfo = typeof(T).GetMethod(methodName);
+            if (methodInfo == null || methodInfo.ReturnType != typeof(Task))
+            {
+                throw new Exception("Method cannot be used");
+            }
+
+            T endpointInstance = ActivatorUtilities.CreateInstance<T>(app.ServiceProvider);
+            //получение информации о типе
+            Type type = typeof(RequestDelegate);
+            app.MapGet(path, (RequestDelegate)methodInfo.CreateDelegate(type, endpointInstance));
+
+        }
+
+        
+        public static void MapEndpoints2<T>(this IEndpointRouteBuilder app, string path, string methodName = "EndpointEx")
+        {
+            MethodInfo info = typeof(T).GetMethod(methodName);
+            Type type = typeof(Task);
+            if (info == null || info.ReturnType != type)
+            {
+                throw new Exception("no method by used");
+            }
+            //Класс ActivatorUtilities, определенный в пространстве имен Microsoft.Extensions.DependencyInjection, предоставляет
+            //методы для создания экземпляров классов, у которых есть зависимости, объявленные через их конструктор
+            T endpointClassInstance = ActivatorUtilities.CreateInstance<T>(app.ServiceProvider);
+            app.MapGet(path, (RequestDelegate)info.CreateDelegate(typeof(RequestDelegate),endpointClassInstance));
+
+        }
+
+        public static void MapEndpoints3(this IEndpointRouteBuilder app, string path, string methodName = "EndpointEx")
+        {
+            MethodInfo info = typeof(WeatherEndpointEx).GetMethod(methodName);
+            Type type = typeof(Task);
+            if (info == null || info.ReturnType != type)
+            {
+                throw new Exception("no method by used");
+            }
+            //Класс ActivatorUtilities, определенный в пространстве имен Microsoft.Extensions.DependencyInjection, предоставляет
+            //методы для создания экземпляров классов, у которых есть зависимости, объявленные через их конструктор
+            Type type2 = typeof(WeatherEndpointEx);     
+            object endpointClassInstance = ActivatorUtilities.CreateInstance(app.ServiceProvider,type2);
+            app.MapGet(path, (RequestDelegate)info.CreateDelegate(typeof(RequestDelegate), endpointClassInstance));
+
+        }
+
+
+        public static void MapEndpoint<T>(this IEndpointRouteBuilder app,string path, string methodName = "Endpoint")
+        {
+            MethodInfo methodInfo = typeof(T).GetMethod(methodName);
+            if (methodInfo == null || methodInfo.ReturnType != typeof(Task))
+            {
+                throw new System.Exception("Method cannot be used");
+            }
+            T endpointInstance =
+            ActivatorUtilities.CreateInstance<T>(app.ServiceProvider);
+            app.MapGet(path, (RequestDelegate)methodInfo
+            .CreateDelegate(typeof(RequestDelegate), endpointInstance));
         }
 
 
