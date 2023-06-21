@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Platform.Platform;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Platform.Services
 {
@@ -114,9 +115,47 @@ namespace Platform.Services
             }
             T endpointInstance =
             ActivatorUtilities.CreateInstance<T>(app.ServiceProvider);
+            
+
+
             app.MapGet(path, (RequestDelegate)methodInfo
             .CreateDelegate(typeof(RequestDelegate), endpointInstance));
         }
+
+
+        public static void MapEndpoint4<T>(this IEndpointRouteBuilder app, string path, string methodName = "Endpoint")
+        {
+            MethodInfo methodInfo = typeof(T).GetMethod(methodName);
+            if (methodInfo == null || methodInfo.ReturnType != typeof(Task))
+            {
+                throw new System.Exception("Method cannot be used");
+            }
+            T endpointInstance =
+            ActivatorUtilities.CreateInstance<T>(app.ServiceProvider);
+            ParameterInfo[] parameters = methodInfo.GetParameters();
+            //public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector);
+           // Func<ParameterInfo, HttpContext> func = delegate (ParameterInfo info) { return info.ParameterType == typeof(HttpContext) ?  ; };
+
+            //app.MapGet(path, delegate (HttpContext context)
+            //{
+            //    return (Task)methodInfo.Invoke(endpointInstance,
+            //    parameters.Select(p => p.ParameterType == typeof(HttpContext) ? context : app.ServiceProvider.GetService(p.ParameterType)).ToArray());
+            //});
+
+            app.MapGet(path, delegate (HttpContext context) { return (Task)methodInfo.Invoke(endpointInstance, parameters.
+                Select(delegate (ParameterInfo info) { return info.ParameterType == typeof(HttpContext) ?
+                    context : app.ServiceProvider.GetService(info.ParameterType); }).ToArray()
+                ); 
+            });
+         
+
+
+            //parameters.Select(p => p.ParameterType == typeof(HttpContext) ? context : app.ServiceProvider.GetService(p.ParameterType)).ToArray());
+            //app.MapGet(path, (RequestDelegate)methodInfo
+            //.CreateDelegate(typeof(RequestDelegate), endpointInstance));
+        }
+
+
 
 
     }

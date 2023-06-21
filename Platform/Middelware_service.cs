@@ -54,11 +54,15 @@ namespace Platform.Platform
             else
             {
                 await request(context);
-            }
-
-
+            }         
            
-           
+        }
+
+        public async Task Invoke4(HttpContext context, IResponseFormatter formatter)
+        {
+            await formatter.Format(context, "Invoke4");
+        
+        
         }
     }
 }

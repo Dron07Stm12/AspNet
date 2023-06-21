@@ -47,8 +47,8 @@ namespace Platform
             //следует использовать для удовлетворения потребностей в сервисе.
             // Интерфейс и класс реализации указываются как аргументы универсального типа.Чтобы использовать сервис, я добавил
             //параметр в метода Configure.
-            services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
-            services.AddTransient<IResponseFormatter, GuidService>(); 
+         // services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
+           services.AddTransient<IResponseFormatter, GuidService>(); 
 
         }
 
@@ -62,44 +62,51 @@ namespace Platform
         //Поскольку объект, который разрешает зависимость, предоставленную извне класса или функции, которая ее использует,
         //говорят, что она была внедрена, поэтомупроцесс известен как внедрение зависимостей.
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,IResponseFormatter formatter_html)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IResponseFormatter formatter_html)
         {
             app.UseDeveloperExceptionPage();
             app.UseRouting();
 
-            app.UseMiddleware<Middelware_service>();
+           
+            app.UseMiddleware<WeatherMiddleware3>();
+            // app.UseMiddleware<WeatherMiddleware4>();
 
-            
+            // используем делегат public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
+            // который использует два входящих параметра -(HttpContext context, Func<Task> task) и параметр 
+            // возврата Task, используем второй входящий параметр task для дальнейшего движения по конвееру
+            Func<HttpContext, Func<Task>, Task> func = delegate (HttpContext context, Func<Task> task)
+            {
+                if (context.Request.Path == "/middl/func")
+                {
+                    //  получение типа IResponseFormatter и информацию о нем через оператор  typeof
+                    Type type = typeof(IResponseFormatter);
+                    // используем сервис через метод GetService для интерфейса IResponseFormatter
+                    IResponseFormatter formatter1 = (IResponseFormatter)app.ApplicationServices.GetService(type);
+                    // или так  IResponseFormatter formatter = app.ApplicationServices.GetService<IResponseFormatter>();
+                    return formatter1.Format(context, "Middleware Function: It is snowing in Chicago");
+                }
+                
+                else { return task(); }
+            };
+
+            //помещаем ссылку на делегат  в метод Use();
+            app.Use(func);
+
+
+           
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.Map("/br", WeatherEndpoint.Endpoint_service);
-                endpoints.Map("/br2", async cont => await WeatherEndpoint.Endpoint_service(cont));
-                endpoints.MapGet("/br3", async delegate (HttpContext context) { await WeatherEndpoint.Endpoint_service(context); });
-                endpoints.MapGet("/br4",  delegate (HttpContext context) { return WeatherEndpoint.Endpoint_service(context); });
+                endpoints.MapGet("endpoint/func", delegate (HttpContext context) 
+                {
+                    Type type = typeof(IResponseFormatter);
+                    // используем сервис через метод GetService для интерфейса IResponseFormatter
+                    IResponseFormatter formatter1 = (IResponseFormatter)app.ApplicationServices.GetService(type);
+                    return formatter1.Format(context, "Endpoint Function: It is sunny in LA");
+                    
+                }) ;
+                endpoints.MapEndpoint4<WeatherEndpoint2>("/endpoint/class");
 
-                endpoints.MapGet("/br5", async delegate (HttpContext http) { await WeatherEndpoint.Endpoint_format(http, "await_dron", formatter_html); });
-                endpoints.MapGet("/br6", delegate (HttpContext http) { return WeatherEndpoint.Endpoint_format(http, "return_dron", formatter_html); });
-                endpoints.Map("/br7", async (cont) => await WeatherEndpoint.Endpoint_format(cont, "lymbda", formatter_html));
-
-                endpoints.MapGet("/br8",  delegate (HttpContext context) { return  formatter_html.Format(context, "class HtmlResponseFormatter"); });
-
-                // класс Middelware_service()
-                endpoints.MapGet("/br9", delegate (HttpContext http) { return new Middelware_service().Invoke2(http); });
-
-                endpoints.MapWeather("/endpoint/class");
-                endpoints.MapUser("/endpoint/user");
-                
-                endpoints.MapUserr("/endpoint/user3");
-                endpoints.MapWeather("/endpoint/user4");
-               
-
-                endpoints.MapEndpoint<WeatherEndpoints>("/endpointex/class");
-                endpoints.MapGet("/endpoint/function", delegate(HttpContext context) { return formatter_html.Format(context, "Endpoint Function: It is sunny in LA"); });
-
-                endpoints.MapEndpoints<WeatherEndpointEx>("/endpointex/class2");
-                endpoints.MapEndpoints2<WeatherEndpointEx>("/endpointT");
-                endpoints.MapEndpoints3("/nul");
             });
 
 
@@ -1763,6 +1770,230 @@ namespace Platform
 
 //            endpoints.MapUserr("/endpoint/user3");
 //            endpoints.MapWeather("/endpoint/user4");
+
+//        });
+
+
+//    }
+//}
+
+
+
+
+
+
+//Startap
+//public class Startup
+//{
+
+//    // This method gets called by the runtime. Use this method to add services to the container.
+//    // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+
+//    //Службы регистрируются в методе ConfigureServices класса Startup с использованием методов расширений на
+//    // параметр IServiceCollection. Далее создания службы для интерфейса IResponseFormatter.
+
+//    public void ConfigureServices(IServiceCollection services)
+//    {
+//        //Метод AddSingleton является одним из методов расширения, доступных для служб, и сообщает ASP.NET Core, что один объект
+//        //следует использовать для удовлетворения потребностей в сервисе.
+//        // Интерфейс и класс реализации указываются как аргументы универсального типа.Чтобы использовать сервис, я добавил
+//        //параметр в метода Configure.
+//        // services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
+//        services.AddTransient<IResponseFormatter, GuidService>();
+
+//    }
+
+//    // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
+
+//    //Новый параметр объявляет зависимость от интерфейса IResponseFormatter, и считается, что метод зависит от
+//    //интерфейса.Перед вызовом метода Configure проверяются его параметры, обнаруживается зависимость и
+//    //службы проверяются, чтобы определить, возможно ли разрешить зависимость.Регистрация в методе ConfigureServices
+//    //сообщает системе внедрения зависимостей, что зависимость от интерфейса IResponseFormatter может быть разрешена с
+//    //помощью объекта HtmlResponseFormatter.Объект создается и используется в качестве аргумента для вызова метода.
+//    //Поскольку объект, который разрешает зависимость, предоставленную извне класса или функции, которая ее использует,
+//    //говорят, что она была внедрена, поэтомупроцесс известен как внедрение зависимостей.
+
+//    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IResponseFormatter formatter_html)
+//    {
+//        app.UseDeveloperExceptionPage();
+//        app.UseRouting();
+
+
+//        app.UseMiddleware<WeatherMiddleware3>();
+//        // app.UseMiddleware<WeatherMiddleware4>();
+
+//        RequestDelegate request = async delegate (HttpContext context) { await context.Response.WriteAsync("Endpoint Function: It is sunny in LA"); };
+
+//        app.UseEndpoints(endpoints =>
+//        {
+//            endpoints.Map("/br", WeatherEndpoint.Endpoint_service);
+//            endpoints.Map("/br2", async cont => await WeatherEndpoint.Endpoint_service(cont));
+//            endpoints.MapGet("/br3", async delegate (HttpContext context) { await WeatherEndpoint.Endpoint_service(context); });
+//            endpoints.MapGet("/br4", delegate (HttpContext context) { return WeatherEndpoint.Endpoint_service(context); });
+
+//            endpoints.MapGet("/br5", async delegate (HttpContext http) { await WeatherEndpoint.Endpoint_format(http, "await_dron", formatter_html); });
+//            endpoints.MapGet("/br6", delegate (HttpContext http) { return WeatherEndpoint.Endpoint_format(http, "return_dron", formatter_html); });
+//            endpoints.Map("/br7", async (cont) => await WeatherEndpoint.Endpoint_format(cont, "lymbda", formatter_html));
+//            //
+//            endpoints.MapGet("/brf", delegate (HttpContext context) { return WeatherEndpoint.Endpoint_format2(context, formatter_html); });
+//            //
+//            endpoints.MapGet("/br8", delegate (HttpContext context) { return formatter_html.Format(context, "class HtmlResponseFormatter"); });
+
+//            //класс Middelware_service()
+//            endpoints.MapGet("/br9", delegate (HttpContext http) { return new Middelware_service().Invoke2(http); });
+
+
+//            //
+
+//            endpoints.MapGet("/br10", delegate (HttpContext context) { return formatter_html.Format(context, "1"); });
+//            endpoints.MapGet("/br11", delegate (HttpContext context) { return new Middelware_service().Invoke4(context, formatter_html); });
+
+//            endpoints.MapGet("/br12", async delegate (HttpContext context) {
+//                IResponseFormatter formatter = context.RequestServices.GetRequiredService<IResponseFormatter>();
+//                await new WeatherMiddleware3().Invoke2(context, formatter);
+
+//            });
+//            endpoints.MapGet("/br13", WeatherMiddleware3.Statik);
+//            //
+
+
+//            endpoints.MapWeather("/endpoint/class");
+//            endpoints.MapUser("/endpoint/user");
+
+//            endpoints.MapUserr("/endpoint/user3");
+//            endpoints.MapWeather("/endpoint/user4");
+
+
+//            endpoints.MapEndpoint<WeatherEndpoints>("/endpointex/class");
+//            endpoints.MapGet("/endpoint/function", delegate (HttpContext context) { return formatter_html.Format(context, "Endpoint Function: It is sunny in LA"); });
+
+//            endpoints.MapEndpoints<WeatherEndpointEx>("/endpointex/class2");
+//            endpoints.MapEndpoints2<WeatherEndpointEx>("/endpointT");
+//            endpoints.MapEndpoints3("/nul");
+
+
+//            endpoints.MapEndpoint4<WeatherMiddleware4>("/endp");
+
+//        });
+
+
+//    }
+//}
+
+
+
+//public class Startup
+//{
+
+//    // This method gets called by the runtime. Use this method to add services to the container.
+//    // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+
+//    //Службы регистрируются в методе ConfigureServices класса Startup с использованием методов расширений на
+//    // параметр IServiceCollection. Далее создания службы для интерфейса IResponseFormatter.
+
+//    public void ConfigureServices(IServiceCollection services)
+//    {
+//        //Метод AddSingleton является одним из методов расширения, доступных для служб, и сообщает ASP.NET Core, что один объект
+//        //следует использовать для удовлетворения потребностей в сервисе.
+//        // Интерфейс и класс реализации указываются как аргументы универсального типа.Чтобы использовать сервис, я добавил
+//        //параметр в метода Configure.
+//        // services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
+//        services.AddTransient<IResponseFormatter, GuidService>();
+
+//    }
+
+//    // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
+
+//    //Новый параметр объявляет зависимость от интерфейса IResponseFormatter, и считается, что метод зависит от
+//    //интерфейса.Перед вызовом метода Configure проверяются его параметры, обнаруживается зависимость и
+//    //службы проверяются, чтобы определить, возможно ли разрешить зависимость.Регистрация в методе ConfigureServices
+//    //сообщает системе внедрения зависимостей, что зависимость от интерфейса IResponseFormatter может быть разрешена с
+//    //помощью объекта HtmlResponseFormatter.Объект создается и используется в качестве аргумента для вызова метода.
+//    //Поскольку объект, который разрешает зависимость, предоставленную извне класса или функции, которая ее использует,
+//    //говорят, что она была внедрена, поэтомупроцесс известен как внедрение зависимостей.
+
+//    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IResponseFormatter formatter_html)
+//    {
+//        app.UseDeveloperExceptionPage();
+//        app.UseRouting();
+
+
+//        app.UseMiddleware<WeatherMiddleware3>();
+//        // app.UseMiddleware<WeatherMiddleware4>();
+
+//        // используем делегат public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
+//        // который использует два входящих параметра -(HttpContext context, Func<Task> task) и параметр 
+//        // возврата Task, используем второй входящий параметр task для дальнейшего движения по конвееру
+//        Func<HttpContext, Func<Task>, Task> func = delegate (HttpContext context, Func<Task> task)
+//        {
+//            if (context.Request.Path == "/middl/func")
+//            {
+//                //  получение типа IResponseFormatter и информацию о нем через оператор  typeof
+//                Type type = typeof(IResponseFormatter);
+//                // используем сервис через метод GetService для интерфейса IResponseFormatter
+//                IResponseFormatter formatter1 = (IResponseFormatter)app.ApplicationServices.GetService(type);
+//                // или так  IResponseFormatter formatter = app.ApplicationServices.GetService<IResponseFormatter>();
+//                return formatter1.Format(context, "Middleware Function: It is snowing in Chicago");
+//            }
+
+//            else { return task(); }
+//        };
+
+//        //помещаем ссылку на делегат  в метод Use();
+//        app.Use(func);
+
+
+//        RequestDelegate request = async delegate (HttpContext context) { await context.Response.WriteAsync("Endpoint Function: It is sunny in LA"); };
+
+//        app.UseEndpoints(endpoints =>
+//        {
+//            endpoints.Map("/br", WeatherEndpoint.Endpoint_service);
+//            endpoints.Map("/br2", async cont => await WeatherEndpoint.Endpoint_service(cont));
+//            endpoints.MapGet("/br3", async delegate (HttpContext context) { await WeatherEndpoint.Endpoint_service(context); });
+//            endpoints.MapGet("/br4", delegate (HttpContext context) { return WeatherEndpoint.Endpoint_service(context); });
+
+//            endpoints.MapGet("/br5", async delegate (HttpContext http) { await WeatherEndpoint.Endpoint_format(http, "await_dron", formatter_html); });
+//            endpoints.MapGet("/br6", delegate (HttpContext http) { return WeatherEndpoint.Endpoint_format(http, "return_dron", formatter_html); });
+//            endpoints.Map("/br7", async (cont) => await WeatherEndpoint.Endpoint_format(cont, "lymbda", formatter_html));
+//            //
+//            endpoints.MapGet("/brf", delegate (HttpContext context) { return WeatherEndpoint.Endpoint_format2(context, formatter_html); });
+//            //
+//            endpoints.MapGet("/br8", delegate (HttpContext context) { return formatter_html.Format(context, "class HtmlResponseFormatter"); });
+
+//            //класс Middelware_service()
+//            endpoints.MapGet("/br9", delegate (HttpContext http) { return new Middelware_service().Invoke2(http); });
+
+
+//            //
+
+//            endpoints.MapGet("/br10", delegate (HttpContext context) { return formatter_html.Format(context, "1"); });
+//            endpoints.MapGet("/br11", delegate (HttpContext context) { return new Middelware_service().Invoke4(context, formatter_html); });
+
+//            endpoints.MapGet("/br12", async delegate (HttpContext context) {
+//                IResponseFormatter formatter = context.RequestServices.GetRequiredService<IResponseFormatter>();
+//                await new WeatherMiddleware3().Invoke2(context, formatter);
+
+//            });
+//            endpoints.MapGet("/br13", WeatherMiddleware3.Statik);
+//            //
+
+
+//            endpoints.MapWeather("/endpoint/class");
+//            endpoints.MapUser("/endpoint/user");
+
+//            endpoints.MapUserr("/endpoint/user3");
+//            endpoints.MapWeather("/endpoint/user4");
+
+
+//            endpoints.MapEndpoint<WeatherEndpoints>("/endpointex/class");
+//            endpoints.MapGet("/endpoint/function", delegate (HttpContext context) { return formatter_html.Format(context, "Endpoint Function: It is sunny in LA"); });
+
+//            endpoints.MapEndpoints<WeatherEndpointEx>("/endpointex/class2");
+//            endpoints.MapEndpoints2<WeatherEndpointEx>("/endpointT");
+//            endpoints.MapEndpoints3("/nul");
+
+
+//            endpoints.MapEndpoint4<WeatherEndpoint2>("/endp");
 
 //        });
 

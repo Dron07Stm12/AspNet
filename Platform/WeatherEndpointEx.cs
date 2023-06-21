@@ -15,6 +15,8 @@ namespace Platform.Platform
             this.formatter = formatter;
         }
 
+       
+
         public  Task EndpointEx(HttpContext http)
         {
 
@@ -37,6 +39,7 @@ namespace Platform.Platform
         {
             formatter = responseFormatter;
         }
+
         public async Task Endpoint(HttpContext context)
         {
             await formatter.Format(context, "Endpoint Class: It is cloudy in Milan");

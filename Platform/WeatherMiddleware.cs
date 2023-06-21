@@ -22,22 +22,22 @@ namespace Platform.Platform
         }
 
 
-        //public async Task Invoke(HttpContext http)
-        //{
-        //    if (http.Request.Path == "/middleware/class")
-        //    {
-        //        //await formatter.Format(http, "services_middleware_class");
-        //        await http.Response.WriteAsync("Middleware Class: It is raining in London");
-
-        //    }
-        //    else
-        //    {                
-        //     await request.Invoke(http);
-        //    }
-
-        //}
-
         public async Task Invoke(HttpContext http)
+        {
+            if (http.Request.Path == "/middleware/class")
+            {
+                //await formatter.Format(http, "services_middleware_class");
+                await http.Response.WriteAsync("Middleware Class: It is raining in London");
+
+            }
+            else
+            {
+                await request.Invoke(http);
+            }
+
+        }
+
+        public async Task Invoke3(HttpContext http)
         {
 
             await http.Response.WriteAsync("Middleware Class");

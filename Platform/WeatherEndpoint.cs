@@ -33,9 +33,32 @@ namespace Platform.Platform
 
         public static async Task Endpoint_format2(HttpContext context,IResponseFormatter formatter) 
         {
-            await formatter.Format(context, "Endpoint_format2");
+            await formatter.Format(context, "content");
         }
 
 
     }
+
+    public class WeatherEndpoint2
+    {
+        //private RequestDelegate request;
+        ////  private IResponseFormatter formatter;
+
+
+        //public WeatherMiddleware4(RequestDelegate requestDelegate)
+        //{
+        //    request = requestDelegate;
+        //    //  formatter = responseFormatter;
+        //}
+
+        public async Task Endpoint(HttpContext context, IResponseFormatter formatter)
+        {
+
+            await formatter.Format(context, "Endpoint Class:  WeatherEndpoint2");
+
+        }
+
+
+    }
+
 }
