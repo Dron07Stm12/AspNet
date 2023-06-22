@@ -76,7 +76,50 @@ namespace Platform.Platform
     }
 
 
-    
+    public class WeatherMiddleware4
+    {
+        private RequestDelegate request;
+        //  private IResponseFormatter formatter;
+
+
+        public WeatherMiddleware4(RequestDelegate requestDelegate)
+        {
+            request = requestDelegate;
+            //  formatter = responseFormatter;
+        }
+
+
+        public async Task Invoke2(HttpContext context, IResponseFormatter formatter, IResponseFormatter formatter2, IResponseFormatter formatter3)
+        {
+            if (context.Request.Path == "/middleware4/class")
+            {
+                await formatter.Format(context, "\nMiddleware Class: It is raining in London3");
+                await formatter2.Format(context, "\nMiddleware Class: It is raining in London3");
+                await formatter3.Format(context, "\nMiddleware Class: It is raining in London3");
+            }
+
+            else { await request(context); }
+        }
+
+        public  Task Invoke(HttpContext context, IResponseFormatter formatter, IResponseFormatter formatter2, IResponseFormatter formatter3)
+        {
+            if (context.Request.Path == "/middleware4/class")
+            {
+                Task task  = formatter.Format(context, "Middleware Class: It is raining in London\n");
+                
+                Task task2 = formatter2.Format(context, "Middleware Class: It is raining in London2\n");
+                Task task3 = formatter3.Format(context, "Middleware Class: It is raining in London3\n");
+                
+                return Task.WhenAll(task,task2,task3);
+               
+                
+            }
+
+            else { return request(context); }
+        }
+
+
+    }
 
 
 
