@@ -9,6 +9,7 @@ using Platform.Platform;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Net.NetworkInformation;
 
 namespace Platform.Services
 {
@@ -148,14 +149,100 @@ namespace Platform.Services
                 ); 
             });
          
-
-
             //parameters.Select(p => p.ParameterType == typeof(HttpContext) ? context : app.ServiceProvider.GetService(p.ParameterType)).ToArray());
             //app.MapGet(path, (RequestDelegate)methodInfo
             //.CreateDelegate(typeof(RequestDelegate), endpointInstance));
         }
+         
+
+        public static void MapEndpoint5<T>(this IEndpointRouteBuilder builder, string path, string methodName = "Endpoint") 
+        {
+            //Получение типа через оператор  typeof
+            Type type = typeof(T);
+            //Выполняет поиск открытого метода с заданным именем
+            MethodInfo info = type.GetMethod(methodName);
+            //Получение типа через оператор  typeof
+            Type type2 = typeof(Task); 
+            if (info == null || info.ReflectedType != type2)
+            {
+                throw new Exception("error");
+            }
+           
+
+            ParameterInfo[] methodParams = info.GetParameters();
+            builder.MapGet(path, delegate (HttpContext http)
+            {
+                T end = ActivatorUtilities.CreateInstance<T>(http.RequestServices);
+                T endpointInstance =
+                            ActivatorUtilities.CreateInstance<T>(http.RequestServices);
+                return (Task)info.Invoke(endpointInstance, methodParams.Select(delegate (ParameterInfo parameter)
+                {
+                    return parameter.ParameterType == typeof(HttpContext) ? http : http.RequestServices.GetService(parameter.ParameterType);
+                }).ToArray());
+            });
+
+            //builder.MapGet(path,delegate(HttpContext http) { return (Task)info.Invoke(end,methodParams.Select(delegate(ParameterInfo parameter) {
+            //    return parameter.ParameterType == typeof(HttpContext) ? http : http.RequestServices.GetService(parameter.ParameterType);}).ToArray()); });
 
 
+            //builder.MapGet(path, delegate (HttpContext http) {
+            //    return (Task)info.Invoke(end, methodParams.Select(delegate (ParameterInfo parameter) {
+            //        return  http.RequestServices.GetService(parameter.ParameterType);
+            //    }).ToArray());
+            //});
+        }
+
+
+        public static void MapEndpoint6<T>(this IEndpointRouteBuilder app,string path, string methodName = "Endpoint")
+        {
+
+            Type type= typeof(T);
+            MethodInfo info2 = type.GetMethod(methodName);
+            Type type2 = typeof(Task);  
+            if (info2 == null || info2.ReturnType != type2)
+            {
+                throw new System.Exception("Method cannot be used");
+            }
+         
+            ParameterInfo[] methodParams = info2.GetParameters();
+            //app.MapGet(path, delegate (HttpContext context)
+            //{
+            //    T e = ActivatorUtilities.CreateInstance<T>(context.RequestServices);
+            //    return (Task)info2.Invoke(e, methodParams.Select(delegate (ParameterInfo info) {
+            //        return info.ParameterType == typeof(HttpContext) ? context :
+            //        context.RequestServices.GetService(info.ParameterType);
+            //    }).ToArray());
+            //});
+
+
+            app.MapGet(path, delegate (HttpContext context)
+            {
+                T e = ActivatorUtilities.CreateInstance<T>(context.RequestServices);
+                return (Task)info2.Invoke(e, methodParams.Select(delegate (ParameterInfo info) {
+                   
+
+                    if (info.ParameterType == typeof(HttpContext))
+                    {
+                        return context;
+                    }
+
+                    else 
+                    {
+                        return context.RequestServices.GetService(info.ParameterType);
+                    }
+
+
+
+
+                }).ToArray());
+            });
+
+
+
+
+
+
+        }
 
 
     }

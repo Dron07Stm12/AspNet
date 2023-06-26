@@ -25,6 +25,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Platform.Services;
 using System.Threading;
+using System.Reflection;
 
 namespace Platform
 {
@@ -48,8 +49,8 @@ namespace Platform
             // »нтерфейс и класс реализации указываютс€ как аргументы универсального типа.„тобы использовать сервис, € добавил
             //параметр в метода Configure.
          // services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
-           services.AddTransient<IResponseFormatter, GuidService>(); 
-
+         //  services.AddTransient<IResponseFormatter, GuidService>();
+            services.AddScoped<IResponseFormatter, GuidService>();
         }
 
         // также добавление  промежуточного программного обеспечени€ - общего шаблона(IOptions<MessageOptions> msgOptions)
@@ -93,8 +94,24 @@ namespace Platform
             //помещаем ссылку на делегат  в метод Use();
             app.Use(func);
 
+      
+            Func<HttpContext, Func<Task>, Task> func2 = delegate (HttpContext context, Func<Task> task)
+            {
+                if (context.Request.Path == "/middl/func2")
+                {
+                    //  получение типа IResponseFormatter и информацию о нем через оператор  typeof
+                    Type type = typeof(IResponseFormatter);
+                    // используем сервис через метод GetService дл€ интерфейса IResponseFormatter
+                    IResponseFormatter formatter1 = (IResponseFormatter)context.RequestServices.GetService(type);
+                    // или так  IResponseFormatter formatter = app.ApplicationServices.GetService<IResponseFormatter>();
+                    return formatter1.Format(context, "Middleware Function: It is snowing in Chicago2");
+                }
 
-           
+                else { return task(); }
+            };
+
+
+            app.Use(func2);
 
             app.UseEndpoints(endpoints =>
             {
@@ -106,8 +123,19 @@ namespace Platform
                     return formatter1.Format(context, "Endpoint Function: It is sunny in LA");
                     
                 }) ;
+
+                endpoints.MapGet("dron", delegate(HttpContext context) {
+
+                    Type type = typeof(IResponseFormatter);
+                    IResponseFormatter formatter = (IResponseFormatter)context.RequestServices.GetService(type);
+                    return formatter.Format(context,"Dron");
+                });
+
+
+
                 endpoints.MapEndpoint4<WeatherEndpoint2>("/endpoint/class");
 
+               endpoints.MapEndpoint6<WeatherEndpoint2>("/endpoint2/class2");
             });
 
 
