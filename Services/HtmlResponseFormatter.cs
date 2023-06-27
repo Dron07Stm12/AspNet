@@ -54,6 +54,6 @@ namespace Platform.Services
         
         }
 
-        //public bool RichOutput => true;
+        public bool RichOutput => true;
     }
 }
