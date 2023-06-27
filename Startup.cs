@@ -50,7 +50,9 @@ namespace Platform
             //параметр в метода Configure.
          // services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
          //  services.AddTransient<IResponseFormatter, GuidService>();
-            services.AddScoped<IResponseFormatter, GuidService>();
+          //  services.AddScoped<IResponseFormatter, GuidService>();
+            services.AddScoped<IResponseFormatter, TimeResponseFormatter>();
+            services.AddScoped<ITimeStamper, DefaultTimeStamper>();
         }
 
         // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
