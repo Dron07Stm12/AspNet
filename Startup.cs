@@ -82,11 +82,31 @@ namespace Platform
             };
             app.Use(func);
 
+            app.Use(delegate (HttpContext context, Func<Task> tsk) 
+            {
+                string defaultDebug = Configuration["Logging:LogLevel:Default"];
+                string environ = Configuration["ASPNETCORE_ENVIRONMENT"];
+                if (context.Request.Path == "/usedel")
+                {
+                    Task http = context.Response.WriteAsync($"one: {defaultDebug}\n");
+                    Task http2 = context.Response.WriteAsync($"two: {environ}");
+                    return Task.WhenAll(http, http2);
+                }
+                else
+                {
 
+                    return tsk.Invoke();
+                }
 
-            app.UseEndpoints(delegate (IEndpointRouteBuilder builder) { builder.MapGet("/", delegate (HttpContext context) {
-                return context.Response.WriteAsync("Hello Dronchic");
-            }); });
+            });
+
+            app.UseEndpoints(delegate (IEndpointRouteBuilder builder) 
+            { 
+                builder.MapGet("/o", delegate (HttpContext context) 
+                {
+                  return context.Response.WriteAsync("Hello Dronchic");
+                }); 
+            });
 
             //app.UseEndpoints(endpoints =>
             //{
