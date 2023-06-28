@@ -62,7 +62,15 @@ namespace Platform
         //Данные конфигурации предоставляются через интерфейс IConfiguration
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseDeveloperExceptionPage();
+
+
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
+
+          
             app.UseRouting();
 
             app.UseMiddleware<LocationMiddleware>();
@@ -86,11 +94,15 @@ namespace Platform
             {
                 string defaultDebug = Configuration["Logging:LogLevel:Default"];
                 string environ = Configuration["ASPNETCORE_ENVIRONMENT"];
+                string wsId = Configuration["WebService:Id"];
+                string wsKey = Configuration["WebService:Key"];
                 if (context.Request.Path == "/usedel")
                 {
                     Task http = context.Response.WriteAsync($"one: {defaultDebug}\n");
-                    Task http2 = context.Response.WriteAsync($"two: {environ}");
-                    return Task.WhenAll(http, http2);
+                    Task http2 = context.Response.WriteAsync($"two: {environ}\n");
+                    Task id = context.Response.WriteAsync($"wsId: {wsId}\n");
+                    Task key = context.Response.WriteAsync($"wsKey: {wsKey}");
+                    return Task.WhenAll(http, http2,id,key);
                 }
                 else
                 {
