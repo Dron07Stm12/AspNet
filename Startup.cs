@@ -35,35 +35,18 @@ namespace Platform
 
     public class Startup
     {
+        private IConfiguration Configuration { get; set; }
 
         public Startup(IConfiguration configuration)
         {
-                Configuration= configuration;   
+                Configuration= configuration;
         }
-        private IConfiguration Configuration;
         //Службы регистрируются в методе ConfigureServices класса Startup с использованием методов расширений на
         // параметр IServiceCollection. Далее создания службы для интерфейса IResponseFormatter.
         
         public void ConfigureServices(IServiceCollection services)
         {
-            //Метод AddSingleton является одним из методов расширения, доступных для служб, и сообщает ASP.NET Core, что один объект
-            //следует использовать для удовлетворения потребностей в сервисе.
-            // Интерфейс и класс реализации указываются как аргументы универсального типа.Чтобы использовать сервис, я добавил
-            //параметр в метода Configure.
-            // services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
-            //  services.AddTransient<IResponseFormatter, GuidService>();
-            services.AddScoped<IResponseFormatter,TextResponseFormatter>();
-            services.AddScoped<IResponseFormatter, HtmlResponseFormatter>();
-            services.AddScoped<IResponseFormatter, GuidService>();
-         //   services.AddScoped<IResponseFormatter, TimeResponseFormatter>();
-         //   services.AddScoped<ITimeStamper, DefaultTimeStamper>();
-
-            //services.AddScoped<IResponseFormatter>(delegate (IServiceProvider service) {
-            //    //ключ интерфейса IConfiguration - string this[string key] { get; set; }
-            //    string typeName = Configuration["service:IResponseFormatter"];
-            //    return (IResponseFormatter)ActivatorUtilities.CreateInstance(service, typeName == null ? typeof(GuidService): Type.GetType(typeName,true));
-            //});
-
+            services.Configure<MessageOptions>(Configuration.GetSection("Location"));
         }
 
         // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
@@ -76,65 +59,41 @@ namespace Platform
         //Поскольку объект, который разрешает зависимость, предоставленную извне класса или функции, которая ее использует,
         //говорят, что она была внедрена, поэтомупроцесс известен как внедрение зависимостей.
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IResponseFormatter formatter_html)
+        //Данные конфигурации предоставляются через интерфейс IConfiguration
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDeveloperExceptionPage();
             app.UseRouting();
 
-           
-            //app.UseMiddleware<WeatherMiddleware3>();
-            //app.UseMiddleware<WeatherMiddleware4>();
-            // app.UseMiddleware<WeatherMiddleware4>();
+            app.UseMiddleware<LocationMiddleware>();
 
-            
-            // используем делегат public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
-            // который использует два входящих параметра -(HttpContext context, Func<Task> task) и параметр 
-            // возврата Task, используем второй входящий параметр task для дальнейшего движения по конвееру
-            //Func<HttpContext, Func<Task>, Task> func2 = delegate (HttpContext context, Func<Task> task)
-            //{
-            //    if (context.Request.Path == "/middl/func2")
-            //    {
-            //        //  получение типа IResponseFormatter и информацию о нем через оператор  typeof
-            //        Type type = typeof(IResponseFormatter);
-            //        // используем сервис через метод GetService для интерфейса IResponseFormatter
-            //        IResponseFormatter formatter1 = (IResponseFormatter)context.RequestServices.GetService(type);
-            //        // или так  IResponseFormatter formatter = app.ApplicationServices.GetService<IResponseFormatter>();
-            //        return formatter1.Format(context, "Middleware Function: It is snowing in Chicago2");
-            //    }
+            Func<HttpContext, Func<Task>, Task> func = delegate (HttpContext context,Func<Task> tsk ) {
+                string defaultDebug = Configuration["Logging:LogLevel:Default"];
 
-            //    else { return task(); }
-            //};
-            ////помещаем ссылку на делегат  в метод Use();
-            //app.Use(func2);
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapGet("endpoint/func", delegate (HttpContext context) 
+                if (context.Request.Path == "/use")
                 {
-                    Type type = typeof(IResponseFormatter);
-                    // используем сервис через метод GetService для интерфейса IResponseFormatter
-                    IResponseFormatter formatter1 = (IResponseFormatter)app.ApplicationServices.GetService(type);
-                    return formatter1.Format(context, "Endpoint Function: It is sunny in LA");
-                    
-                }) ;
-                endpoints.MapGet("dron", delegate(HttpContext context) {
-
-                    Type type = typeof(IResponseFormatter);
-                    IResponseFormatter formatter = (IResponseFormatter)context.RequestServices.GetService(type);
-                    return formatter.Format(context,"Dron");
-                });
-
-                endpoints.MapGet("/",delegate(HttpContext context) { 
-                    
-                    IResponseFormatter formatter = context.RequestServices.GetServices<IResponseFormatter>().First(delegate (IResponseFormatter response) {
-                        return response.RichOutput; });
-                    return formatter.Format(context,"Multi");
+                    return context.Response.WriteAsync($"The config setting is:{defaultDebug}");
+                }
+                else
+                {
+                        return tsk.Invoke();
+                }
                 
-                });
+            };
+            app.Use(func);
 
-                //endpoints.MapEndpoint4<WeatherEndpoint2>("/endpoint/class");
-                //endpoints.MapEndpoint6<WeatherEndpoint2>("/endpoint2/class2");
-            });
+
+
+            app.UseEndpoints(delegate (IEndpointRouteBuilder builder) { builder.MapGet("/", delegate (HttpContext context) {
+                return context.Response.WriteAsync("Hello Dronchic");
+            }); });
+
+            //app.UseEndpoints(endpoints =>
+            //{
+
+            //    endpoints.MapGet("/", delegate (HttpContext context) { return context.Response.WriteAsync("Hello Dron"); });
+             
+            //});
 
 
         }
@@ -2239,6 +2198,115 @@ namespace Platform
 
 //            endpoints.MapEndpoint4<WeatherEndpoint2>("/endpoint/class");
 //            endpoints.MapEndpoint6<WeatherEndpoint2>("/endpoint2/class2");
+//        });
+
+
+//    }
+//}
+//}
+
+//public class Startup
+//{
+
+//    public Startup(IConfiguration configuration)
+//    {
+//        Configuration = configuration;
+//    }
+//    private IConfiguration Configuration;
+//    //Службы регистрируются в методе ConfigureServices класса Startup с использованием методов расширений на
+//    // параметр IServiceCollection. Далее создания службы для интерфейса IResponseFormatter.
+
+//    public void ConfigureServices(IServiceCollection services)
+//    {
+//        //Метод AddSingleton является одним из методов расширения, доступных для служб, и сообщает ASP.NET Core, что один объект
+//        //следует использовать для удовлетворения потребностей в сервисе.
+//        // Интерфейс и класс реализации указываются как аргументы универсального типа.Чтобы использовать сервис, я добавил
+//        //параметр в метода Configure.
+//        // services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
+//        //  services.AddTransient<IResponseFormatter, GuidService>();
+//        services.AddScoped<IResponseFormatter, TextResponseFormatter>();
+//        services.AddScoped<IResponseFormatter, HtmlResponseFormatter>();
+//        services.AddScoped<IResponseFormatter, GuidService>();
+//        //   services.AddScoped<IResponseFormatter, TimeResponseFormatter>();
+//        //   services.AddScoped<ITimeStamper, DefaultTimeStamper>();
+
+//        //services.AddScoped<IResponseFormatter>(delegate (IServiceProvider service) {
+//        //    //ключ интерфейса IConfiguration - string this[string key] { get; set; }
+//        //    string typeName = Configuration["service:IResponseFormatter"];
+//        //    return (IResponseFormatter)ActivatorUtilities.CreateInstance(service, typeName == null ? typeof(GuidService): Type.GetType(typeName,true));
+//        //});
+
+//    }
+
+//    // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
+
+//    //Новый параметр объявляет зависимость от интерфейса IResponseFormatter, и считается, что метод зависит от
+//    //интерфейса.Перед вызовом метода Configure проверяются его параметры, обнаруживается зависимость и
+//    //службы проверяются, чтобы определить, возможно ли разрешить зависимость.Регистрация в методе ConfigureServices
+//    //сообщает системе внедрения зависимостей, что зависимость от интерфейса IResponseFormatter может быть разрешена с
+//    //помощью объекта HtmlResponseFormatter.Объект создается и используется в качестве аргумента для вызова метода.
+//    //Поскольку объект, который разрешает зависимость, предоставленную извне класса или функции, которая ее использует,
+//    //говорят, что она была внедрена, поэтомупроцесс известен как внедрение зависимостей.
+
+//    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IResponseFormatter formatter_html)
+//    {
+//        app.UseDeveloperExceptionPage();
+//        app.UseRouting();
+
+
+//        //app.UseMiddleware<WeatherMiddleware3>();
+//        //app.UseMiddleware<WeatherMiddleware4>();
+//        // app.UseMiddleware<WeatherMiddleware4>();
+
+
+//        // используем делегат public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
+//        // который использует два входящих параметра -(HttpContext context, Func<Task> task) и параметр 
+//        // возврата Task, используем второй входящий параметр task для дальнейшего движения по конвееру
+//        //Func<HttpContext, Func<Task>, Task> func2 = delegate (HttpContext context, Func<Task> task)
+//        //{
+//        //    if (context.Request.Path == "/middl/func2")
+//        //    {
+//        //        //  получение типа IResponseFormatter и информацию о нем через оператор  typeof
+//        //        Type type = typeof(IResponseFormatter);
+//        //        // используем сервис через метод GetService для интерфейса IResponseFormatter
+//        //        IResponseFormatter formatter1 = (IResponseFormatter)context.RequestServices.GetService(type);
+//        //        // или так  IResponseFormatter formatter = app.ApplicationServices.GetService<IResponseFormatter>();
+//        //        return formatter1.Format(context, "Middleware Function: It is snowing in Chicago2");
+//        //    }
+
+//        //    else { return task(); }
+//        //};
+//        ////помещаем ссылку на делегат  в метод Use();
+//        //app.Use(func2);
+
+//        app.UseEndpoints(endpoints =>
+//        {
+//            endpoints.MapGet("endpoint/func", delegate (HttpContext context)
+//            {
+//                Type type = typeof(IResponseFormatter);
+//                // используем сервис через метод GetService для интерфейса IResponseFormatter
+//                IResponseFormatter formatter1 = (IResponseFormatter)app.ApplicationServices.GetService(type);
+//                return formatter1.Format(context, "Endpoint Function: It is sunny in LA");
+
+//            });
+//            endpoints.MapGet("dron", delegate (HttpContext context) {
+
+//                Type type = typeof(IResponseFormatter);
+//                IResponseFormatter formatter = (IResponseFormatter)context.RequestServices.GetService(type);
+//                return formatter.Format(context, "Dron");
+//            });
+
+//            endpoints.MapGet("/", delegate (HttpContext context) {
+
+//                IResponseFormatter formatter = context.RequestServices.GetServices<IResponseFormatter>().First(delegate (IResponseFormatter response) {
+//                    return response.RichOutput;
+//                });
+//                return formatter.Format(context, "Multi");
+
+//            });
+
+//            //endpoints.MapEndpoint4<WeatherEndpoint2>("/endpoint/class");
+//            //endpoints.MapEndpoint6<WeatherEndpoint2>("/endpoint2/class2");
 //        });
 
 
