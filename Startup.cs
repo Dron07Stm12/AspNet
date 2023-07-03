@@ -26,6 +26,8 @@ using Microsoft.AspNetCore.Routing.Patterns;
 using Platform.Services;
 using System.Threading;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.FileProviders;
 
 namespace Platform
 {
@@ -35,99 +37,95 @@ namespace Platform
 
     public class Startup
     {
-        private IConfiguration Configuration { get; set; }
-
-        public Startup(IConfiguration configuration)
-        {
-                Configuration= configuration;
-        }
-        //Службы регистрируются в методе ConfigureServices класса Startup с использованием методов расширений на
-        // параметр IServiceCollection. Далее создания службы для интерфейса IResponseFormatter.
-        
+       
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<MessageOptions>(Configuration.GetSection("Location"));
-        }
 
-        // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
-
-        //Новый параметр объявляет зависимость от интерфейса IResponseFormatter, и считается, что метод зависит от
-        //интерфейса.Перед вызовом метода Configure проверяются его параметры, обнаруживается зависимость и
-        //службы проверяются, чтобы определить, возможно ли разрешить зависимость.Регистрация в методе ConfigureServices
-        //сообщает системе внедрения зависимостей, что зависимость от интерфейса IResponseFormatter может быть разрешена с
-        //помощью объекта HtmlResponseFormatter.Объект создается и используется в качестве аргумента для вызова метода.
-        //Поскольку объект, который разрешает зависимость, предоставленную извне класса или функции, которая ее использует,
-        //говорят, что она была внедрена, поэтомупроцесс известен как внедрение зависимостей.
-
-        //Данные конфигурации предоставляются через интерфейс IConfiguration
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-        {
-
-
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
-
-          
-            app.UseRouting();
-
-            app.UseMiddleware<LocationMiddleware>();
-
-            Func<HttpContext, Func<Task>, Task> func = delegate (HttpContext context,Func<Task> tsk ) {
-                string defaultDebug = Configuration["Logging:LogLevel:Default"];
-
-                if (context.Request.Path == "/use")
-                {
-                    return context.Response.WriteAsync($"The config setting is:{defaultDebug}");
-                }
-                else
-                {
-                        return tsk.Invoke();
-                }
-                
-            };
-            app.Use(func);
-
-            app.Use(delegate (HttpContext context, Func<Task> tsk) 
-            {
-                string defaultDebug = Configuration["Logging:LogLevel:Default"];
-                string environ = Configuration["ASPNETCORE_ENVIRONMENT"];
-                string wsId = Configuration["WebService:Id"];
-                string wsKey = Configuration["WebService:Key"];
-                if (context.Request.Path == "/usedel")
-                {
-                    Task http = context.Response.WriteAsync($"one: {defaultDebug}\n");
-                    Task http2 = context.Response.WriteAsync($"two: {environ}\n");
-                    Task id = context.Response.WriteAsync($"wsId: {wsId}\n");
-                    Task key = context.Response.WriteAsync($"wsKey: {wsKey}");
-                    return Task.WhenAll(http, http2,id,key);
-                }
-                else
-                {
-
-                    return tsk.Invoke();
-                }
-
-            });
-
-            app.UseEndpoints(delegate (IEndpointRouteBuilder builder) 
-            { 
-                builder.MapGet("/o", delegate (HttpContext context) 
-                {
-                  return context.Response.WriteAsync("Hello Dronchic");
-                }); 
-            });
-
-            //app.UseEndpoints(endpoints =>
+            //services.Configure<CookiePolicyOptions>(opts =>
             //{
-
-            //    endpoints.MapGet("/", delegate (HttpContext context) { return context.Response.WriteAsync("Hello Dron"); });
-             
+            //    opts.CheckConsentNeeded = context => true;
             //});
 
+            Action<CookiePolicyOptions> configureOptions = delegate (CookiePolicyOptions cookie)
+            {
 
+                Func<HttpContext, bool> func = delegate (HttpContext context)
+                {
+
+                    if (context.Request != null)//context.Request.Cookies == null //context.Request != null//context.Request.Path == "/cookie"
+                    {
+                        return true;
+                    }
+                    else { return false; }
+
+
+                };
+                cookie.CheckConsentNeeded = func;
+
+            };
+
+            services.Configure<CookiePolicyOptions>(configureOptions);
+
+
+
+            //public Func<HttpContext, bool> CheckConsentNeeded { get; set; }
+            //  services.Configure<CookiePolicyOptions>(delegate (CookiePolicyOptions options) {  options.CheckConsentNeeded =  } );
+        }
+
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            app.UseDeveloperExceptionPage();
+            app.UseCookiePolicy();  
+            app.UseRouting();
+           
+
+            Func<RequestDelegate, RequestDelegate> middleware2 = delegate (RequestDelegate request) 
+            {
+              return  request = delegate (HttpContext http2) { return http2.Response.WriteAsync("r"); };
+                
+            };
+            app.Map("/map", delegate (IApplicationBuilder builder) { builder.Use(middleware2); });
+
+
+         //   app.Run(delegate (HttpContext context ) { return context.Response.WriteAsync("run"); });
+
+            app.UseEndpoints(delegate (IEndpointRouteBuilder builder) 
+            {
+                builder.MapGet("/path", delegate (HttpContext context ) { return context.Response.WriteAsync("hello dron"); });
+                builder.MapGet("/path2", async (cont) => { await cont.Response.WriteAsync("dron"); });
+
+                //использование cookie файлов
+                builder.MapGet("/cookie", delegate (HttpContext context) {
+                    // IRequestCookieCollection
+
+                    int counter1 = int.Parse(context.Request.Cookies["counter1"] ?? "0") + 1;
+                    context.Response.Cookies.Append("counter1",counter1.ToString(),new CookieOptions() {MaxAge = TimeSpan.FromMinutes(30),IsEssential = true });
+
+                    int counter2 = int.Parse(context.Request.Cookies["counter2"] ?? "0") + 1;
+                    context.Response.Cookies.Append("counter2", counter2.ToString(),new CookieOptions() { MaxAge = TimeSpan.FromMinutes(30) });
+
+                    return context.Response.WriteAsync($"Counter1: {counter1}, Counter2: {counter2}");
+                });
+
+                
+                    builder.MapGet("clear", delegate (HttpContext context) {
+
+                        context.Response.Cookies.Delete("counter1");
+                        context.Response.Cookies.Delete("counter2");
+                        context.Response.Redirect("/");
+                        return Task.CompletedTask;
+                    });
+
+
+                
+                
+
+
+                builder.MapFallback(delegate (HttpContext context) { return context.Response.WriteAsync("MapFallback"); });
+
+            });
+
+           
         }
     }
 }
@@ -2344,4 +2342,121 @@ namespace Platform
 
 //    }
 //}
+//}
+
+//public class Startup
+//{
+//    private IConfiguration Configuration { get; set; }
+
+//    public Startup(IConfiguration configuration)
+//    {
+//        Configuration = configuration;
+//    }
+//    //Службы регистрируются в методе ConfigureServices класса Startup с использованием методов расширений на
+//    // параметр IServiceCollection. Далее создания службы для интерфейса IResponseFormatter.
+
+//    public void ConfigureServices(IServiceCollection services)
+//    {
+//        services.Configure<MessageOptions>(Configuration.GetSection("Location"));
+//        //   services.AddSingleton<IResponseFormatter,HtmlResponseFormatter>();
+//    }
+
+//    // также добавление  промежуточного программного обеспечения - общего шаблона(IOptions<MessageOptions> msgOptions)
+
+//    //Новый параметр объявляет зависимость от интерфейса IResponseFormatter, и считается, что метод зависит от
+//    //интерфейса.Перед вызовом метода Configure проверяются его параметры, обнаруживается зависимость и
+//    //службы проверяются, чтобы определить, возможно ли разрешить зависимость.Регистрация в методе ConfigureServices
+//    //сообщает системе внедрения зависимостей, что зависимость от интерфейса IResponseFormatter может быть разрешена с
+//    //помощью объекта HtmlResponseFormatter.Объект создается и используется в качестве аргумента для вызова метода.
+//    //Поскольку объект, который разрешает зависимость, предоставленную извне класса или функции, которая ее использует,
+//    //говорят, что она была внедрена, поэтомупроцесс известен как внедрение зависимостей.
+
+//    //Данные конфигурации предоставляются через интерфейс IConfiguration
+//    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
+//    {
+
+
+//        if (env.IsDevelopment())
+//        {
+//            app.UseDeveloperExceptionPage();
+//        }
+
+//        app.UseStaticFiles();
+
+//        app.UseRouting();
+
+//        app.UseMiddleware<LocationMiddleware>();
+//        //   app.UseMiddleware<WeatherMiddleware2>();
+
+//        Func<HttpContext, Func<Task>, Task> func = delegate (HttpContext context, Func<Task> tsk) {
+//            string defaultDebug = Configuration["Logging:LogLevel:Default"];
+
+//            if (context.Request.Path == "/use")
+//            {
+//                return context.Response.WriteAsync($"The config setting is:{defaultDebug}");
+//            }
+//            else
+//            {
+//                return tsk.Invoke();
+//            }
+
+//        };
+//        app.Use(func);
+
+//        app.Use(delegate (HttpContext context, Func<Task> tsk)
+//        {
+//            string defaultDebug = Configuration["Logging:LogLevel:Default"];
+//            string environ = Configuration["ASPNETCORE_ENVIRONMENT"];
+//            string wsId = Configuration["WebService:Id"];
+//            string wsKey = Configuration["WebService:Key"];
+//            if (context.Request.Path == "/usedel")
+//            {
+//                Task http = context.Response.WriteAsync($"one: {defaultDebug}\n");
+//                Task http2 = context.Response.WriteAsync($"two: {environ}\n");
+//                Task id = context.Response.WriteAsync($"wsId: {wsId}\n");
+//                Task key = context.Response.WriteAsync($"wsKey: {wsKey}");
+//                return Task.WhenAll(http, http2, id, key);
+//            }
+//            else
+//            {
+
+//                return tsk.Invoke();
+//            }
+
+//        });
+
+//        app.UseEndpoints(delegate (IEndpointRouteBuilder builder)
+//        {
+//            builder.MapGet("/o", delegate (HttpContext context)
+//            {
+//                return context.Response.WriteAsync("Hello Dronchic");
+//            });
+
+//            builder.MapGet("/r", delegate (HttpContext context)
+//            {
+//                logger.LogDebug("Response for / started");
+//                logger.LogDebug("Response for / completed");
+//                return context.Response.WriteAsync("logger");
+
+//            });
+
+//            //builder.MapGet("/", async context => {
+//            //    logger.LogDebug("Response for / started");
+//            //    await context.Response.WriteAsync("Hello World!");
+//            //    logger.LogDebug("Response for / completed");
+//            //});
+
+
+
+//        });
+
+//        //app.UseEndpoints(endpoints =>
+//        //{
+
+//        //    endpoints.MapGet("/", delegate (HttpContext context) { return context.Response.WriteAsync("Hello Dron"); });
+
+//        //});
+
+
+//    }
 //}
