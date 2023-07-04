@@ -49,18 +49,54 @@ namespace Platform
             Action<CookiePolicyOptions> configureOptions = delegate (CookiePolicyOptions cookie)
             {
 
-                Func<HttpContext, bool> func = delegate (HttpContext context)
-                {
+                cookie.CheckConsentNeeded = delegate(HttpContext context) {
 
-                    if (context.Request != null)//context.Request.Cookies == null //context.Request != null//context.Request.Path == "/cookie"
+                    if (context != null)
                     {
                         return true;
+
                     }
-                    else { return false; }
+                    else
+                    {
+                       return false;
+                    }
+                   
+                
+                };  
 
+              //  Func<HttpContext, bool> func = delegate (HttpContext context)
+              //  {
+                  
+                    
+              //      //if (cookie.ConsentCookie.Build(context) != null)
+              //      //{
+              //      //    return true;
+              //      //}
+              //      //  cookie.ConsentCookie.Build(context);
+              //      //if (context.Request.Cookies != null)
+              //      //{
 
-                };
-                cookie.CheckConsentNeeded = func;
+              //      //}
+
+              //      //if (context.Features.IsReadOnly)
+              //      //{
+              //      //    return false;
+              //      //}
+              //      //  cookie.CheckConsentNeeded = context;
+              //      //if (context.Request != null)//context.Request.Cookies == null //context.Request != null//context.Request.Path == "/cookie"
+              //      //{
+              //      //    return true;
+              //      //}
+              //      if (context != null)
+              //      {
+              //          return true;
+              //      }
+
+              //      else { return false; }
+
+                   
+              //  };
+              //cookie.CheckConsentNeeded = func;
 
             };
 
@@ -99,7 +135,7 @@ namespace Platform
                     // IRequestCookieCollection
 
                     int counter1 = int.Parse(context.Request.Cookies["counter1"] ?? "0") + 1;
-                    context.Response.Cookies.Append("counter1",counter1.ToString(),new CookieOptions() {MaxAge = TimeSpan.FromMinutes(30),IsEssential = true });
+                    context.Response.Cookies.Append("counter1",counter1.ToString(),new CookieOptions() {MaxAge = TimeSpan.FromMinutes(1),IsEssential = true });
 
                     int counter2 = int.Parse(context.Request.Cookies["counter2"] ?? "0") + 1;
                     context.Response.Cookies.Append("counter2", counter2.ToString(),new CookieOptions() { MaxAge = TimeSpan.FromMinutes(30) });
