@@ -41,15 +41,13 @@ namespace Platform
         public void ConfigureServices(IServiceCollection services)
         {
 
-            //services.Configure<CookiePolicyOptions>(opts =>
-            //{
-            //    opts.CheckConsentNeeded = context => true;
-            //});
-
             Action<CookiePolicyOptions> configureOptions = delegate (CookiePolicyOptions cookie)
             {
 
                 cookie.CheckConsentNeeded = delegate(HttpContext context) {
+
+                    
+
 
                     if (context != null)
                     {
@@ -64,101 +62,47 @@ namespace Platform
                 
                 };  
 
-              //  Func<HttpContext, bool> func = delegate (HttpContext context)
-              //  {
-                  
-                    
-              //      //if (cookie.ConsentCookie.Build(context) != null)
-              //      //{
-              //      //    return true;
-              //      //}
-              //      //  cookie.ConsentCookie.Build(context);
-              //      //if (context.Request.Cookies != null)
-              //      //{
-
-              //      //}
-
-              //      //if (context.Features.IsReadOnly)
-              //      //{
-              //      //    return false;
-              //      //}
-              //      //  cookie.CheckConsentNeeded = context;
-              //      //if (context.Request != null)//context.Request.Cookies == null //context.Request != null//context.Request.Path == "/cookie"
-              //      //{
-              //      //    return true;
-              //      //}
-              //      if (context != null)
-              //      {
-              //          return true;
-              //      }
-
-              //      else { return false; }
-
-                   
-              //  };
-              //cookie.CheckConsentNeeded = func;
+              
 
             };
 
             services.Configure<CookiePolicyOptions>(configureOptions);
 
 
+            services.AddDistributedMemoryCache();
+            services.AddSession(delegate (SessionOptions session)
+            {              
+                session.IdleTimeout = TimeSpan.FromMinutes(10);
+                session.Cookie.IsEssential = true;  
+            });
 
-            //public Func<HttpContext, bool> CheckConsentNeeded { get; set; }
-            //  services.Configure<CookiePolicyOptions>(delegate (CookiePolicyOptions options) {  options.CheckConsentNeeded =  } );
+
+           
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDeveloperExceptionPage();
             app.UseCookiePolicy();  
-            app.UseRouting();
            
+            app.UseMiddleware<ConsentMiddleware>();
+            app.UseSession();
+            app.UseRouting();
 
-            Func<RequestDelegate, RequestDelegate> middleware2 = delegate (RequestDelegate request) 
-            {
-              return  request = delegate (HttpContext http2) { return http2.Response.WriteAsync("r"); };
-                
-            };
-            app.Map("/map", delegate (IApplicationBuilder builder) { builder.Use(middleware2); });
-
-
-         //   app.Run(delegate (HttpContext context ) { return context.Response.WriteAsync("run"); });
+           
 
             app.UseEndpoints(delegate (IEndpointRouteBuilder builder) 
             {
-                builder.MapGet("/path", delegate (HttpContext context ) { return context.Response.WriteAsync("hello dron"); });
-                builder.MapGet("/path2", async (cont) => { await cont.Response.WriteAsync("dron"); });
-
-                //использование cookie файлов
-                builder.MapGet("/cookie", delegate (HttpContext context) {
-                    // IRequestCookieCollection
-
-                    int counter1 = int.Parse(context.Request.Cookies["counter1"] ?? "0") + 1;
-                    context.Response.Cookies.Append("counter1",counter1.ToString(),new CookieOptions() {MaxAge = TimeSpan.FromMinutes(1),IsEssential = true });
-
-                    int counter2 = int.Parse(context.Request.Cookies["counter2"] ?? "0") + 1;
-                    context.Response.Cookies.Append("counter2", counter2.ToString(),new CookieOptions() { MaxAge = TimeSpan.FromMinutes(30) });
-
-                    return context.Response.WriteAsync($"Counter1: {counter1}, Counter2: {counter2}");
+                
+                builder.MapGet("cookie", delegate (HttpContext context) {
+                    int counter1 = (context.Session.GetInt32("counter1") ?? 0) + 1;
+                    int counter2 = (context.Session.GetInt32("counter2") ?? 0) + 1;
+                    context.Session.SetInt32("counter1", counter1);
+                    context.Session.SetInt32("counter2", counter2);
+                    Task task = context.Session.CommitAsync();
+                    Task task2 = context.Response.WriteAsync($"Counter1: {counter1}, Counter2: {counter2}");
+                    return Task.WhenAll(task, task2);
                 });
-
-                
-                    builder.MapGet("clear", delegate (HttpContext context) {
-
-                        context.Response.Cookies.Delete("counter1");
-                        context.Response.Cookies.Delete("counter2");
-                        context.Response.Redirect("/");
-                        return Task.CompletedTask;
-                    });
-
-
-                
-                
-
-
-                builder.MapFallback(delegate (HttpContext context) { return context.Response.WriteAsync("MapFallback"); });
-
             });
 
            
@@ -2492,6 +2436,145 @@ namespace Platform
 //        //    endpoints.MapGet("/", delegate (HttpContext context) { return context.Response.WriteAsync("Hello Dron"); });
 
 //        //});
+
+
+//    }
+//}
+
+
+//public class Startup
+//{
+
+//    public void ConfigureServices(IServiceCollection services)
+//    {
+
+//        //services.Configure<CookiePolicyOptions>(opts =>
+//        //{
+//        //    opts.CheckConsentNeeded = context => true;
+//        //});
+
+//        Action<CookiePolicyOptions> configureOptions = delegate (CookiePolicyOptions cookie)
+//        {
+
+//            cookie.CheckConsentNeeded = delegate (HttpContext context) {
+
+
+
+
+//                if (context != null)
+//                {
+//                    return true;
+
+//                }
+//                else
+//                {
+//                    return false;
+//                }
+
+
+//            };
+
+//            //  Func<HttpContext, bool> func = delegate (HttpContext context)
+//            //  {
+
+
+//            //      //if (cookie.ConsentCookie.Build(context) != null)
+//            //      //{
+//            //      //    return true;
+//            //      //}
+//            //      //  cookie.ConsentCookie.Build(context);
+//            //      //if (context.Request.Cookies != null)
+//            //      //{
+
+//            //      //}
+
+//            //      //if (context.Features.IsReadOnly)
+//            //      //{
+//            //      //    return false;
+//            //      //}
+//            //      //  cookie.CheckConsentNeeded = context;
+//            //      //if (context.Request != null)//context.Request.Cookies == null //context.Request != null//context.Request.Path == "/cookie"
+//            //      //{
+//            //      //    return true;
+//            //      //}
+//            //      if (context != null)
+//            //      {
+//            //          return true;
+//            //      }
+
+//            //      else { return false; }
+
+
+//            //  };
+//            //cookie.CheckConsentNeeded = func;
+
+//        };
+
+//        services.Configure<CookiePolicyOptions>(configureOptions);
+//        services.AddDistributedMemoryCache();
+//        services.AddSession(delegate (SessionOptions session)
+//        {
+//            session.IdleTimeout = TimeSpan.FromMinutes(2);
+//            session.Cookie.IsEssential = true;
+//        });
+
+
+//        //public Func<HttpContext, bool> CheckConsentNeeded { get; set; }
+//        //  services.Configure<CookiePolicyOptions>(delegate (CookiePolicyOptions options) {  options.CheckConsentNeeded =  } );
+//    }
+
+//    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+//    {
+//        app.UseDeveloperExceptionPage();
+//        app.UseCookiePolicy();
+//        app.UseRouting();
+//        app.UseMiddleware<ConsentMiddleware>();
+
+//        Func<RequestDelegate, RequestDelegate> middleware2 = delegate (RequestDelegate request)
+//        {
+//            return request = delegate (HttpContext http2) { return http2.Response.WriteAsync("r"); };
+
+//        };
+//        app.Map("/map", delegate (IApplicationBuilder builder) { builder.Use(middleware2); });
+
+
+//        //   app.Run(delegate (HttpContext context ) { return context.Response.WriteAsync("run"); });
+
+//        app.UseEndpoints(delegate (IEndpointRouteBuilder builder)
+//        {
+//            builder.MapGet("/path", delegate (HttpContext context) { return context.Response.WriteAsync("hello dron"); });
+//            builder.MapGet("/path2", async (cont) => { await cont.Response.WriteAsync("dron"); });
+
+//            //использование cookie файлов
+//            builder.MapGet("/cookie", delegate (HttpContext context) {
+//                // IRequestCookieCollection
+
+//                int counter1 = int.Parse(context.Request.Cookies["counter1"] ?? "0") + 1;
+//                context.Response.Cookies.Append("counter1", counter1.ToString(), new CookieOptions() { MaxAge = TimeSpan.FromMinutes(1), IsEssential = true });
+
+//                int counter2 = int.Parse(context.Request.Cookies["counter2"] ?? "0") + 1;
+//                context.Response.Cookies.Append("counter2", counter2.ToString(), new CookieOptions() { MaxAge = TimeSpan.FromMinutes(30) });
+
+//                return context.Response.WriteAsync($"Counter1: {counter1}, Counter2: {counter2}");
+//            });
+
+
+//            builder.MapGet("clear", delegate (HttpContext context) {
+
+//                context.Response.Cookies.Delete("counter1");
+//                context.Response.Cookies.Delete("counter2");
+//                context.Response.Redirect("/");
+//                return Task.CompletedTask;
+//            });
+
+
+
+
+
+
+//            builder.MapFallback(delegate (HttpContext context) { return context.Response.WriteAsync("MapFallback"); });
+
+//        });
 
 
 //    }
